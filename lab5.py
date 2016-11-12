@@ -23,17 +23,17 @@ IP_SETTING={}
 
 class CS144Topo( Topo ):
     "NAT Topology"
-    
+
     def __init__( self, *args, **kwargs ):
         Topo.__init__( self, *args, **kwargs )
-        server1 = self.add_host( 'server1' )
-        server2 = self.add_host( 'server2' )
-        nat = self.add_switch( 'sw0' )
-        bridge = self.add_switch( 'sw1' )
-        client = self.add_host('client')
-        self.add_link(client, nat)
+        server1 = self.addHost( 'server1' )
+        server2 = self.addHost( 'server2' )
+        nat = self.addSwitch( 'sw0' )
+        bridge = self.addSwitch( 'sw1' )
+        client = self.addHost('client')
+        self.addLink(client, nat)
         for h in server1, server2, nat: #client, root:
-            self.add_link( h,  bridge)
+            self.addLink( h,  bridge)
 
 
 class CS144Controller( Controller ):
@@ -90,11 +90,11 @@ def starthttp( host ):
 
 def stophttp():
     "Stop simple Python web servers"
-    info( '*** Shutting down stale SimpleHTTPServers', 
-          quietRun( "pkill -9 -f SimpleHTTPServer" ), '\n' )    
-    info( '*** Shutting down stale webservers', 
-          quietRun( "pkill -9 -f webserver.py" ), '\n' )    
-    
+    info( '*** Shutting down stale SimpleHTTPServers',
+          quietRun( "pkill -9 -f SimpleHTTPServer" ), '\n' )
+    info( '*** Shutting down stale webservers',
+          quietRun( "pkill -9 -f webserver.py" ), '\n' )
+
 def set_default_route(host):
     info('*** setting default gateway of host %s\n' % host.name)
     if(host.name == 'server1'):
@@ -106,7 +106,7 @@ def set_default_route(host):
     print host.name, routerip
     host.cmd('route add %s/32 dev %s-eth0' % (routerip, host.name))
     host.cmd('route add default gw %s dev %s-eth0' % (routerip, host.name))
-    ips = IP_SETTING[host.name].split(".") 
+    ips = IP_SETTING[host.name].split(".")
     host.cmd('route del -net %s.0.0.0/8 dev %s-eth0' % (ips[0], host.name))
 
 def get_ip_setting():

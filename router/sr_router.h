@@ -67,6 +67,9 @@ int sr_read_from_server(struct sr_instance* );
 /* -- sr_router.c -- */
 void sr_init(struct sr_instance* );
 void sr_handlepacket(struct sr_instance* , uint8_t * , unsigned int , char* );
+void modify_send_icmp_host_unreachable(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface);
+void forward_packet(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface, unsigned char * dest_mac);
+struct sr_arpentry * arp_cache_contains_entry(struct sr_instance* sr, struct sr_rt * entry);
 
 /* -- sr_if.c -- */
 void sr_add_interface(struct sr_instance* , const char* );
