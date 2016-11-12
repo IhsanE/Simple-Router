@@ -1,6 +1,11 @@
 # ass2
 csc458 fam mad ting
 
+
+MAKE ALL CHANGES ON BRANCH [MASTER]
+
+----------------------------------------------------
+
 1) Start Mininet
 2) Start Controller
 3) Start Nat
