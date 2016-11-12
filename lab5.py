@@ -22,18 +22,18 @@ IPCONFIG_FILE = './IP_CONFIG'
 IP_SETTING={}
 
 class CS144Topo( Topo ):
-    "CS 144 Lab 5 Topology"
-    
+    "NAT Topology"
+
     def __init__( self, *args, **kwargs ):
         Topo.__init__( self, *args, **kwargs )
-        server1 = self.add_host( 'server1' )
-        server2 = self.add_host( 'server2' )
-        nat = self.add_switch( 'sw0' )
-        bridge = self.add_switch( 'sw1' )
-        root = self.add_host( 'root', inNamespace=False )
-        self.add_link(root, nat)
+        server1 = self.addHost( 'server1' )
+        server2 = self.addHost( 'server2' )
+        nat = self.addSwitch( 'sw0' )
+        bridge = self.addSwitch( 'sw1' )
+        client = self.addHost('client')
+        self.addLink(client, nat)
         for h in server1, server2, nat: #client, root:
-            self.add_link( h,  bridge)
+            self.addLink( h,  bridge)
 
 
 class CS144Controller( Controller ):
@@ -85,31 +85,28 @@ def stopsshd():
 def starthttp( host ):
     "Start simple Python web server on hosts"
     info( '*** Starting SimpleHTTPServer on host', host, '\n' )
-    #host.cmd( 'cd ~/http_%s/; python -m SimpleHTTPServer 80 >& /tmp/%s.log &' % (host.name, host.name) )
-    #host.cmd( 'cd ~/http_%s/; nohup python2.7 ~/http_%s/webserver.py >& /tmp/%s.log &' % (host.name, host.name, host.name) )
-    host.cmd( 'cd ~/http_%s/; nohup python2.7 ~/http_%s/webserver.py &' % (host.name, host.name) )
-    #host.cmd( 'cd ~/http_%s/; screen -S webserver -D -R python2.7 ~/http_%s/webserver.py ' % (host.name, host.name) )
+    host.cmd( 'cd ./http_%s/; nohup python2.7 ./webserver.py &' % (host.name) )
 
 
 def stophttp():
     "Stop simple Python web servers"
-    info( '*** Shutting down stale SimpleHTTPServers', 
-          quietRun( "pkill -9 -f SimpleHTTPServer" ), '\n' )    
-    info( '*** Shutting down stale webservers', 
-          quietRun( "pkill -9 -f webserver.py" ), '\n' )    
-    
+    info( '*** Shutting down stale SimpleHTTPServers',
+          quietRun( "pkill -9 -f SimpleHTTPServer" ), '\n' )
+    info( '*** Shutting down stale webservers',
+          quietRun( "pkill -9 -f webserver.py" ), '\n' )
+
 def set_default_route(host):
     info('*** setting default gateway of host %s\n' % host.name)
     if(host.name == 'server1'):
         routerip = IP_SETTING['sw0-eth2']
     elif(host.name == 'server2'):
         routerip = IP_SETTING['sw0-eth2']
+    elif(host.name == 'client'):
+        routerip = IP_SETTING['sw0-eth1']
     print host.name, routerip
     host.cmd('route add %s/32 dev %s-eth0' % (routerip, host.name))
     host.cmd('route add default gw %s dev %s-eth0' % (routerip, host.name))
-    #HARDCODED
-    #host.cmd('route del -net 10.3.0.0/16 dev %s-eth0' % host.name)
-    ips = IP_SETTING[host.name].split(".") 
+    ips = IP_SETTING[host.name].split(".")
     host.cmd('route del -net %s.0.0.0/8 dev %s-eth0' % (ips[0], host.name))
 
 def get_ip_setting():
@@ -117,6 +114,8 @@ def get_ip_setting():
         return -1
     f = open(IPCONFIG_FILE, 'r')
     for line in f:
+        if( len(line.split()) == 0):
+          break
         name, ip = line.split()
         print name, ip
         IP_SETTING[name] = ip
@@ -135,28 +134,20 @@ def cs144net():
     info( '*** Creating network\n' )
     net = Mininet( topo=topo, controller=RemoteController, ipBase=IPBASE )
     net.start()
-    server1, server2, nat = net.get( 'server1', 'server2', 'sw0')
+    server1, server2, client, nat = net.get( 'server1', 'server2', 'client', 'sw0')
     s1intf = server1.defaultIntf()
     s1intf.setIP('%s/8' % IP_SETTING['server1'])
     s2intf = server2.defaultIntf()
     s2intf.setIP('%s/8' % IP_SETTING['server2'])
+    clintf = client.defaultIntf()
+    clintf.setIP('%s/8' % IP_SETTING['client'])
 
-    cmd = ['ifconfig', "eth1"]
-    process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
-    hwaddr = Popen(["grep", "HWaddr"], stdin=process.stdout, stdout=PIPE)
-    eth1_hw = hwaddr.communicate()[0]
-    info( '*** setting mac address of sw0-eth1 (nat) the same as eth1 (%s)\n' % eth1_hw.split()[4])
-    nat.intf('sw0-eth1').setMAC(eth1_hw.split()[4])
-    
-   
-    #for host in server1, server2, client:
-    for host in server1, server2:
+    for host in server1, server2, client:
         set_default_route(host)
     starthttp( server1 )
     starthttp( server2 )
     CLI( net )
     stophttp()
-#    stopsshd()
     net.stop()
 
 
