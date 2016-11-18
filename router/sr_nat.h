@@ -4,6 +4,8 @@
 
 #include <inttypes.h>
 #include <time.h>
+#include <stdlib.h>
+#include <string.h>
 #include <pthread.h>
 
 typedef enum {

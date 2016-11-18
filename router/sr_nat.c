@@ -74,7 +74,7 @@ struct sr_nat_mapping *sr_nat_lookup_external(struct sr_nat *nat,
 		while (mapping) {
 			if ((mapping->type == type) && (mapping->aux_ext == aux_ext)) {
 				copy = (struct sr_nat_mapping *) malloc(sizeof(struct sr_nat_mapping));
-				memcpy(copy, mapping, sizeof(struct sr_nat_mapping));  
+				memcpy(copy, mapping, sizeof(struct sr_nat_mapping));
 				break;
 			}
 			mapping = mapping->next;
@@ -103,7 +103,7 @@ struct sr_nat_mapping *sr_nat_lookup_internal(struct sr_nat *nat,
 				(mapping->aux_int == aux_int)
 			) {
 				copy = (struct sr_nat_mapping *) malloc(sizeof(struct sr_nat_mapping));
-				memcpy(copy, mapping, sizeof(struct sr_nat_mapping));  
+				memcpy(copy, mapping, sizeof(struct sr_nat_mapping));
 				break;
 			}
 				mapping = mapping->next;
@@ -136,7 +136,7 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 				(mapping->aux_int == aux_int)
 			) {
 				mapping->last_updated = time(NULL);
-				memcpy(copy, mapping, sizeof(struct sr_nat_mapping));  
+				memcpy(copy, mapping, sizeof(struct sr_nat_mapping));
 				break;
 			}
 			mapping = mapping->next;
@@ -156,7 +156,6 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 			nat->mappings = new_entry;
 
 			memcpy(copy, new_entry, sizeof(struct sr_nat_mapping));
-			break;
 		}
 	}
 
