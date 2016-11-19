@@ -32,7 +32,6 @@ int sr_nat_init(struct sr_nat *nat) { /* Initializes the nat */
 	/* CAREFUL MODIFYING CODE ABOVE THIS LINE! */
 
 	nat->mappings = NULL;
-	sr_nat_timeout(nat);
 	/* Initialize any variables here */
 
 	return success;
