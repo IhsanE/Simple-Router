@@ -175,9 +175,14 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 				/* OUT: drop */
 			sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 			struct sr_nat_mapping *external_mapping = sr_nat_lookup_external(sr->nat, icmp_header->icmp_id, nat_mapping_icmp);
+			/* forward to internal host */
 			if (external_mapping) {
-				/* forward to internal host */
 
+				/* Change dest IP and icmp id*/
+				icmp_header->icmp_id = external_mapping->aux_int;
+				ip_header->ip_dst = mapping->ip_int;
+
+				forwarding_logic(sr, packet, len, interface);
 				free(external_mapping);
 			}
 			/*ELSE: DROP*/
