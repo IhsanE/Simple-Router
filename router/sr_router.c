@@ -154,7 +154,6 @@ void sr_handle_ip_packet(struct sr_instance* sr,
         unsigned int len,
         char* interface/* lent */)
 {
-	print_hdrs(packet, len);
   if (is_ip_checksum_valid(packet)) {
     /* FOR US */
     if (is_ip_packet_matches_interfaces(sr, packet)) {
@@ -211,7 +210,6 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 
       	icmp_header->icmp_id = mapping->aux_ext;
 		ip_header->ip_src = htonl(mapping->ip_ext);
-		print_hdrs(packet, len);
 		forwarding_logic(sr, packet, len, interface);
       }
     }

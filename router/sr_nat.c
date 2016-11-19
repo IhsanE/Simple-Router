@@ -149,7 +149,6 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 		}
 		/* If NOT in list, return new object */
 		if (mapping == NULL) {
-			printf("if mapping is NULL \n");	
 			new_entry =	(struct sr_nat_mapping *) malloc(sizeof(struct sr_nat_mapping));
 			new_entry->ip_int = ip_int;
 			new_entry->aux_int = aux_int;
@@ -165,9 +164,7 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 			memcpy(copy, new_entry, sizeof(struct sr_nat_mapping));
 		}
 	}
-
-	printf("before lock \n");	
+	
 	pthread_mutex_unlock(&(nat->lock));
-	printf("after lock \n");	
 	return copy;
 }
