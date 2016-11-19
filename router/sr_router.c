@@ -177,13 +177,7 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 			struct sr_nat_mapping *external_mapping = sr_nat_lookup_external(sr->nat, icmp_header->icmp_id, nat_mapping_icmp);
 			if (external_mapping) {
 				/* forward to internal host */
-				forward_packet_nat_in(
-					sr,
-					packet,
-					len,
-					"eth1",
-					external_mapping
-				);
+
 				free(external_mapping);
 			}
 			/*ELSE: DROP*/
@@ -196,20 +190,7 @@ void sr_handle_ip_packet(struct sr_instance* sr,
           3.i) MATCH -> Forward
           3.ii)NO MATCH -> Send Arp Req, add to req queue
       */
-      if (!is_ttl_valid(packet)) {
-        send_icmp_time_exceeded(sr, packet, len, interface);
-        return;
-      }
-
-      struct sr_rt * routing_entry = longest_prefix_match(sr, packet);
-      if (routing_entry) {
-        /* We found a match in the routing table */
-        handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
-      } else {
-        /* didn't find match, need to send net unreachable */
-        modify_send_icmp_net_unreachable(sr, packet, len, interface);
-        /* Drop packet because no entry found in routing table */ 
-      }
+      forwarding_logic(sr, packet, len, interface);
     }
   }
 }
@@ -603,4 +584,21 @@ void send_arp_req_packets(struct sr_instance* sr, struct sr_arpreq * req, unsign
   }
   sr_arpreq_destroy(&(sr->cache), req);
   return;
+}
+
+void forwarding_logic(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface) {
+	if (!is_ttl_valid(packet)) {
+	  send_icmp_time_exceeded(sr, packet, len, interface);
+	  return;
+	}
+
+	struct sr_rt * routing_entry = longest_prefix_match(sr, packet);
+	if (routing_entry) {
+	  /* We found a match in the routing table */
+	  handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
+	} else {
+	  /* didn't find match, need to send net unreachable */
+	  modify_send_icmp_net_unreachable(sr, packet, len, interface);
+	  /* Drop packet because no entry found in routing table */ 
+	}
 }

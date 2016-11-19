@@ -105,6 +105,7 @@ struct sr_arpentry * arp_cache_contains_entry(struct sr_instance* sr, struct sr_
 void forward_packet(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface, unsigned char * dest_mac);
 void forward_packet_nat_in(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface, unsigned char * dest_mac, struct sr_nat_mapping * mapping);
 void send_arp_req_packets(struct sr_instance* sr, struct sr_arpreq * req, unsigned char * dest_mac);
+void   forwarding_logic(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface);
 /* -- sr_if.c -- */
 void sr_add_interface(struct sr_instance* , const char* );
 void sr_set_ether_ip(struct sr_instance* , uint32_t );
