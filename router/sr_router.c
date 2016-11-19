@@ -612,8 +612,9 @@ void forwarding_logic(struct sr_instance* sr, uint8_t * packet, unsigned int len
 	  send_icmp_time_exceeded(sr, packet, len, interface);
 	  return;
 	}
-
+	printf("before lookup\n");
 	struct sr_rt * routing_entry = longest_prefix_match(sr, packet);
+	printf("after lookup\n");
 	if (routing_entry) {
 	  /* We found a match in the routing table */
 	  handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
