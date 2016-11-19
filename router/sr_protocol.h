@@ -99,6 +99,19 @@ struct sr_icmp_t11_hdr {
 } __attribute__ ((packed)) ;
 typedef struct sr_icmp_t11_hdr sr_icmp_t11_hdr_t;
 
+/* Structure of a ICMP type 8 header
+ */
+struct sr_icmp_t8_hdr {
+  uint8_t icmp_type;
+  uint8_t icmp_code;
+  uint16_t icmp_sum;
+  uint16_t icmp_id;
+  uint16_t icmp_seq;
+  uint8_t data[ICMP_DATA_SIZE];
+  
+} __attribute__ ((packed)) ;
+typedef struct sr_icmp_t8_hdr sr_icmp_t8_hdr_t;
+
 
 /* Structure of a type3 ICMP header
  */
