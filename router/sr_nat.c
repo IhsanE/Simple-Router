@@ -32,6 +32,7 @@ int sr_nat_init(struct sr_nat *nat) { /* Initializes the nat */
 	/* CAREFUL MODIFYING CODE ABOVE THIS LINE! */
 
 	nat->mappings = NULL;
+	sr_nat_timeout(nat);
 	/* Initialize any variables here */
 
 	return success;
@@ -59,6 +60,29 @@ void *sr_nat_timeout(void *nat_ptr) {  /* Periodic Timout handling */
 		time_t curtime = time(NULL);
 
 		/* handle periodic tasks here */
+		difftime(curtime,cache->entries[i].added)
+		struct sr_nat_mapping *mapping = nat->mappings;
+		struct sr_nat_mapping *to_free = NULL;
+		struct sr_nat_mapping *prev = NULL;
+		
+		while (mapping) {
+			if (mapping->type == nat_mapping_icmp) {
+				if (difftime(curtime,mapping->last_updated) > nat->icmpTimeout) {
+					to_free = mapping;
+					if (prev) {
+						prev->next = mapping->next;
+					} else {
+						nat->mappings = mapping->next;
+					}
+					mapping = mapping->next;
+					free(to_free);
+				} else {
+					prev = mapping;
+					mapping = mapping->next;
+				}
+			}
+		}
+		
 
 		pthread_mutex_unlock(&(nat->lock));
 	}
@@ -141,6 +165,7 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 				(mapping->ip_int == ip_int) &&
 				(mapping->aux_int == aux_int)
 			) {
+				printf("FOUND\n");
 				mapping->last_updated = time(NULL);
 				memcpy(copy, mapping, sizeof(struct sr_nat_mapping));
 				break;
@@ -149,6 +174,7 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 		}
 		/* If NOT in list, return new object */
 		if (mapping == NULL) {
+			printf("NOT FOUND\n");
 			new_entry =	(struct sr_nat_mapping *) malloc(sizeof(struct sr_nat_mapping));
 			new_entry->ip_int = ip_int;
 			new_entry->aux_int = aux_int;
@@ -164,7 +190,7 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 			memcpy(copy, new_entry, sizeof(struct sr_nat_mapping));
 		}
 	}
-	
+
 	pthread_mutex_unlock(&(nat->lock));
 	return copy;
 }
