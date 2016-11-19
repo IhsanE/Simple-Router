@@ -60,7 +60,6 @@ void *sr_nat_timeout(void *nat_ptr) {  /* Periodic Timout handling */
 		time_t curtime = time(NULL);
 
 		/* handle periodic tasks here */
-		difftime(curtime,cache->entries[i].added)
 		struct sr_nat_mapping *mapping = nat->mappings;
 		struct sr_nat_mapping *to_free = NULL;
 		struct sr_nat_mapping *prev = NULL;
