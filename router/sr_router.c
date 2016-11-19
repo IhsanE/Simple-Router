@@ -196,7 +196,22 @@ void sr_handle_ip_packet(struct sr_instance* sr,
           3.i) MATCH -> Forward
           3.ii)NO MATCH -> Send Arp Req, add to req queue
       */
-      forwarding_logic(sr, packet, len, interface);
+
+      /* NAT DISABLED */
+      if (sr->nat == NULL) {
+      	forwarding_logic(sr, packet, len, interface);
+      }
+
+      /* NAT ENABLED */
+      else {
+      	sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+		sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+      	struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
+
+      	icmp_header->icmp_id = mapping->aux_ext;
+		ip_header->ip_src = mapping->ip_ext;
+		forwarding_logic(sr, packet, len, interface);
+      }
     }
   }
 }
