@@ -123,7 +123,7 @@ void sr_handle_arp_packet(struct sr_instance* sr,
         send_arp_req_packets(sr, req, arp_header->ar_sha);
       }
     }
-  }k
+  }
 }
 
 /* Modify packet in place; returns reply packet */
