@@ -177,6 +177,13 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 			struct sr_nat_mapping *external_mapping = sr_nat_lookup_external(sr->nat, icmp_header->icmp_id, nat_mapping_icmp);
 			if (external_mapping) {
 				/* forward to internal host */
+				forward_packet_nat_in(
+					sr,
+					packet,
+					len,
+					"eth1"
+					external_mapping
+				);
 				free(external_mapping);
 			}
 			/*ELSE: DROP*/
@@ -554,6 +561,31 @@ void forward_packet(
 
   set_ethernet_src_dst(ethernet_header, interface_to_send_from->addr, dest_mac);
 
+  ip_header->ip_sum = 0;
+  ip_header->ip_sum = cksum(ip_header, sizeof(sr_ip_hdr_t));
+  sr_send_packet(sr, packet, len, interface);
+}
+
+void forward_packet_nat_in(
+  struct sr_instance* sr,
+  uint8_t * packet,
+  unsigned int len,
+  char* interface,
+  unsigned char * dest_mac,
+  struct sr_nat_mapping* mapping) {
+
+  sr_ethernet_hdr_t * ethernet_header = (sr_ethernet_hdr_t *)packet;
+  sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+
+  struct sr_if* interface_to_send_from = sr_get_interface(sr, interface);
+  sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+  /* Set ICMP ID to internal */
+  icmp_header->icmp_id = mapping->aux_int;
+
+  set_ethernet_src_dst(ethernet_header, interface_to_send_from->addr, dest_mac);
+
+  ip_header->ip_dst = mapping->ip_int;
   ip_header->ip_sum = 0;
   ip_header->ip_sum = cksum(ip_header, sizeof(sr_ip_hdr_t));
   sr_send_packet(sr, packet, len, interface);
