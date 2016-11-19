@@ -239,26 +239,8 @@ void modify_send_icmp(struct sr_instance* sr, uint8_t * packet, unsigned int len
 		ip_header->ip_src = interface_struct->ip;
 	}
 	ip_header->ip_dst = original_src;
-	/*
-	ip_header->ip_sum = 0;
-	ip_header->ip_sum = cksum(ip_header, ip_header->ip_hl*4);
-	*/
-	
-	/* Swap Ethernet dest/src addrs
-	memcpy(
-		ethernet_header->ether_dhost,
-		ethernet_header->ether_shost,
-		sizeof(uint8_t)*ETHER_ADDR_LEN
-	);
 
-	memcpy(
-		ethernet_header->ether_shost,
-		interface_struct->addr,
-		sizeof(uint8_t)*ETHER_ADDR_LEN
-	);
-	*/
 	handle_ip_packets_for_us(sr, packet, len);
-	/* sr_send_packet(sr, packet, len, interface); */
 }
 
 void modify_send_icmp_reply(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface) {
