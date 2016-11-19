@@ -16,7 +16,6 @@
   See the comments in the header file for an idea of what it should look like.
 */
 void send_arp_req(struct sr_instance* sr, struct sr_arpreq * req) {
-    /* MISSING STEP OF MODIFYING ARP Request TO UPDATE CHECKSUM, ADD DEST MACS */
     struct sr_packet * packet = (struct sr_packet*)malloc(sizeof(struct sr_packet));
     packet->buf = (uint8_t *)malloc(sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
     packet->len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
@@ -34,33 +33,22 @@ void send_arp_req(struct sr_instance* sr, struct sr_arpreq * req) {
     arp_header->ar_sip = interface_to_send_on->ip;
     /* Reconfigure ARP src/dest targets */
     
-
-    memcpy(
-        arp_header->ar_sha,
-        interface_to_send_on->addr,
-        sizeof(unsigned char)*ETHER_ADDR_LEN
-    );
     uint8_t all_one[6] = {-1, -1, -1, -1, -1, -1};
-    /* Swap Ethernet dest/src addrs */
-    memcpy(
-        ethernet_header->ether_dhost,
-        all_one,
-        sizeof(uint8_t)*ETHER_ADDR_LEN
-    );
 
-    memcpy(
-        ethernet_header->ether_shost,
-        interface_to_send_on->addr,
-        sizeof(uint8_t)*ETHER_ADDR_LEN
-    );
+    set_arp_sha_tha(arp_header, interface_to_send_on->addr, all_one);
+
+    /* Set Ethernet dest/src addrs */
+    set_ethernet_src_dst(ethernet_header, interface_to_send_on->addr, all_one);
 
     ethernet_header->ether_type = htons(ethertype_arp);
     sr_send_packet(sr, packet->buf, packet->len, packet->iface);
+    free(packet->buf);
+    free(packet);
 }
 
 void handle_arpreq(struct sr_instance *sr, struct sr_arpreq * req) {
     time_t curtime = time(NULL);
-    if (difftime(curtime, req->sent) > 1) {
+    if (difftime(curtime, req->sent) >= 1) {
         if (req->times_sent >= 5) {
             struct sr_packet * head = req->packets;
             while (head) {
@@ -153,7 +141,7 @@ struct sr_arpreq *sr_arpcache_queuereq(struct sr_arpcache *cache,
         new_pkt->buf = (uint8_t *)malloc(packet_len);
         memcpy(new_pkt->buf, packet, packet_len);
         new_pkt->len = packet_len;
-		new_pkt->iface = (char *)malloc(sr_IFACE_NAMELEN);
+        new_pkt->iface = (char *)malloc(sr_IFACE_NAMELEN);
         strncpy(new_pkt->iface, iface, sr_IFACE_NAMELEN);
         new_pkt->next = req->packets;
         req->packets = new_pkt;
@@ -313,4 +301,3 @@ void *sr_arpcache_timeout(void *sr_ptr) {
     
     return NULL;
 }
-
