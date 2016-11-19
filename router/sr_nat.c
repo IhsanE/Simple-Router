@@ -1,8 +1,14 @@
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <signal.h>
 #include <assert.h>
 #include "sr_nat.h"
 #include <unistd.h>
+#include "sr_protocol.h"
+#include "sr_arpcache.h"
+#include "sr_utils.h"
 
 int EXT_ID = 1;
 
