@@ -204,13 +204,24 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 
       /* NAT ENABLED */
       else {
-      	sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-		sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-      	struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
-
-      	icmp_header->icmp_id = mapping->aux_ext;
-		ip_header->ip_src = htonl(mapping->ip_ext);
-		forwarding_logic(sr, packet, len, interface);
+		if (!is_ttl_valid(packet)) {
+		  send_icmp_time_exceeded(sr, packet, len, interface);
+		  return;
+		}
+		struct sr_rt * routing_entry = longest_prefix_match(sr, packet);
+		if (routing_entry) {
+		  	/* We found a match in the routing table */
+  	      	sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+  			sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+  	      	struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
+			icmp_header->icmp_id = mapping->aux_ext;
+			ip_header->ip_src = htonl(mapping->ip_ext);
+		  	handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
+		} else {
+		  /* didn't find match, need to send net unreachable */
+		  modify_send_icmp_net_unreachable(sr, packet, len, interface);
+		  /* Drop packet because no entry found in routing table */ 
+		}
       }
     }
   }
@@ -612,9 +623,7 @@ void forwarding_logic(struct sr_instance* sr, uint8_t * packet, unsigned int len
 	  send_icmp_time_exceeded(sr, packet, len, interface);
 	  return;
 	}
-	printf("before lookup\n");
 	struct sr_rt * routing_entry = longest_prefix_match(sr, packet);
-	printf("after lookup\n");
 	if (routing_entry) {
 	  /* We found a match in the routing table */
 	  handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
