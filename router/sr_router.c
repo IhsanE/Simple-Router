@@ -519,7 +519,7 @@ void sr_handlepacket(struct sr_instance* sr,
 						/* IN: route */
 						/* OUT: drop */
 					sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-					sr_nat_mapping *external_mapping = sr_nat_lookup_external(sr->nat, icmp_header->icmp_id, nat_mapping_icmp);
+					struct sr_nat_mapping *external_mapping = sr_nat_lookup_external(sr->nat, icmp_header->icmp_id, nat_mapping_icmp);
 					if (external_mapping) {
 						/* forward to internal host */
 						free(external_mapping);
