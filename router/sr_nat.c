@@ -79,6 +79,8 @@ void *sr_nat_timeout(void *nat_ptr) {  /* Periodic Timout handling */
 					prev = mapping;
 					mapping = mapping->next;
 				}
+			} else {
+				mapping = mapping->next;
 			}
 		}
 		
