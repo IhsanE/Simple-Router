@@ -181,7 +181,7 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 					sr,
 					packet,
 					len,
-					"eth1"
+					"eth1",
 					external_mapping
 				);
 				free(external_mapping);
