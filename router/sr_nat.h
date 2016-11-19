@@ -29,16 +29,21 @@ struct sr_nat_mapping {
   struct sr_nat_mapping *next;
 };
 
-struct sr_nat {
+typedef struct sr_nat {
   /* add any fields here */
   struct sr_nat_mapping *mappings;
+
+  int tcpTransitoryTimeout;
+  int tcpEstablishedTimeout;
+  int icmpTimeout;
+
 
   /* threading */
   pthread_mutex_t lock;
   pthread_mutexattr_t attr;
   pthread_attr_t thread_attr;
   pthread_t thread;
-};
+} sr_nat_t;
 
 
 int   sr_nat_init(struct sr_nat *nat);     /* Initializes the nat */

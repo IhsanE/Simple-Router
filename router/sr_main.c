@@ -57,6 +57,10 @@ static void sr_load_rt_wrap(struct sr_instance* sr, char* rtable);
 int main(int argc, char **argv)
 {
     int c;
+    int isNat = 0;
+    int icmpTimeout = 60;
+    int tcpEstablishedTimeout = 7440;
+    int tcpTransitoryTimeout = 300;
     char *host   = DEFAULT_HOST;
     char *user = 0;
     char *server = DEFAULT_SERVER;
@@ -69,7 +73,7 @@ int main(int argc, char **argv)
 
     printf("Using %s\n", VERSION_INFO);
 
-    while ((c = getopt(argc, argv, "hs:v:p:u:t:r:l:T:")) != EOF)
+    while ((c = getopt(argc, argv, "hns:v:p:u:t:r:l:T:I:E:R:")) != EOF)
     {
         switch (c)
         {
@@ -100,6 +104,17 @@ int main(int argc, char **argv)
                 break;
             case 'T':
                 template = optarg;
+            case 'n':
+                isNat = 1;
+                break;
+            case 'I':
+                icmpTimeout = atoi(optarg);
+                break;
+            case 'E':
+                tcpEstablishedTimeout = atoi(optarg);
+                break;
+            case 'R':
+                tcpTransitoryTimeout = atoi(optarg);
                 break;
         } /* switch */
     } /* -- while -- */
@@ -154,6 +169,21 @@ int main(int argc, char **argv)
     else {
       /* Read from specified routing table */
       sr_load_rt_wrap(&sr, rtable);
+    }
+
+    /* if nat enabled, init the nat struct in sr */
+    if (isNat) {
+        printf("I AM USING THE NAT ARG!!\n");
+        sr.nat = malloc(sizeof(sr_nat_t));
+
+        sr_nat_init(sr.nat);
+
+        sr.nat->tcpTransitoryTimeout = tcpTransitoryTimeout;
+        sr.nat->tcpEstablishedTimeout = tcpEstablishedTimeout;
+        sr.nat->icmpTimeout = icmpTimeout;
+    } else {
+        printf("NAT ARG IS NULL NULL NULL NULL \n");
+        sr.nat = NULL;
     }
 
     /* call router init (for arp subsystem etc.) */
