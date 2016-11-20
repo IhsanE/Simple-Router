@@ -205,22 +205,22 @@ int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type) {
 		struct sr_nat_mapping * mapping = NULL;
 		int not_found = 0;
 		int port = 1024;
-		// while (1) {
-		// 	mapping = nat->mappings;
-		// 	while (mapping) {
-		// 		if (mapping->aux_ext == port) {
-		// 			not_found = 1;
-		// 			break;
-		// 		}
-		// 		mapping = mapping->next;
-		// 	}
-		// 	if (not_found == 1){
-		// 		port = 1024 + (port+1)%(65535 - 1024);
-		// 		not_found = 0;
-		// 	} else {
-		// 		break;
-		// 	}
-		// }
+/*		while (1) {
+			mapping = nat->mappings;
+			while (mapping) {
+				if (mapping->aux_ext == port) {
+					not_found = 1;
+					break;
+				}
+				mapping = mapping->next;
+			}
+			if (not_found == 1){
+				port = 1024 + (port+1)%(65535 - 1024);
+				not_found = 0;
+			} else {
+				break;
+			}
+		}*/
 		return port;		
 	}
 
