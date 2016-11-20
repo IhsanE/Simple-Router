@@ -188,8 +188,10 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 			new_entry->conns = NULL;
 			new_entry->type = type;
 
-			new_entry->next = nat->mappings;
-			nat->mappings = new_entry;
+			if (nat->mappings != NULL) {
+				new_entry->next = nat->mappings;
+			}
+			nat->mappings = new_entry;				
 
 			memcpy(copy, new_entry, sizeof(struct sr_nat_mapping));
 		}
@@ -205,7 +207,7 @@ int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type) {
 		struct sr_nat_mapping * mapping = NULL;
 		int not_found = 0;
 		int port = 1024;
-		while (1) {
+/*		while (1) {
 			mapping = nat->mappings;
 			while (mapping) {
 				if (mapping->aux_ext == port) {
@@ -220,7 +222,7 @@ int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type) {
 			} else {
 				break;
 			}
-		}
+		}*/
 		return port;		
 	}
 
@@ -326,11 +328,9 @@ void print_nat_mappings(struct sr_nat *nat){
     struct sr_nat_mapping *mapping = nat->mappings;
     while(mapping){
         printf("************************\n");
-        printf("\nip_int: ");
-        print_addr_ip_int(htonl(mapping->ip_int));
+        printf("\nip_int: %d", mapping->ip_int);
         printf("\naux_int: %d\n", mapping->aux_int);
-        printf("\nip_ext: ");
-        print_addr_ip_int(htonl(mapping->ip_ext));
+        printf("\nip_ext: %d", mapping->ip_ext));
         printf("\naux_ext: %d\n", mapping->aux_ext);
         printf("\n type: %i",mapping->type);
         
