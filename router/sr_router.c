@@ -243,8 +243,10 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface, struct sr_rt * routing_entry) {
 	sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-
-	if (tcp_header->control & 2) {
+	uint16_t SYN_FLAG = 2;
+	printf("%d\n", (tcp_header->flags & SYN_FLAG)):
+	printf("NTOHS BOI: %d\n", (ntohs(tcp_header->flags) & SYN_FLAG)):
+	if ((tcp_header->flags & SYN_FLAG) == SYN_FLAG) {
 		/* SYN flag is set */
 		struct sr_nat_mapping *mapping = sr_nat_insert_tcp_mapping(sr->nat, ip_header->ip_src, 
 			tcp_header->src_port, ip_header->ip_dst, tcp_header->dest_port);

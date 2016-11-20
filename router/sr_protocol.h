@@ -132,19 +132,7 @@ struct sr_tcp_hdr {
   uint16_t dest_port;
   uint32_t sequence_num;
   uint32_t ack_num;
-#if __BYTE_ORDER == __BIG_ENDIAN
-  unsigned int offset:4; 
-  unsigned int reserved:3; 
-  unsigned int ecn:3; 
-  unsigned int control:6;
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-  unsigned int control:6;
-  unsigned int ecn:3; 
-  unsigned int reserved:3; 
-  unsigned int offset:4;
-#else
-#error "Byte ordering ot specified " 
-#endif 
+  uint16_t flags;
   uint16_t window_size;
   uint16_t checksum;
   uint16_t urgent;
