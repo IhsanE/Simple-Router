@@ -127,6 +127,20 @@ struct sr_icmp_t3_hdr {
 typedef struct sr_icmp_t3_hdr sr_icmp_t3_hdr_t;
 
 
+struct sr_tcp_hdr {
+  uint16_t src_port;
+  uint16_t dest_port;
+  uint32_t sequence_num;
+  uint32_t ack_num;
+  unsigned int offset:4; 
+  unsigned int reserved:3; 
+  unsigned int ecn:3; 
+  unsigned int control:6;
+  uint16_t window_size;
+  uint16_t checksum;
+  uint16_t urgent;
+} __attribute__ ((packed)) ;
+typedef struct sr_tcp_hdr sr_tcp_hdr_t;
 
 
 /*
@@ -177,6 +191,7 @@ typedef struct sr_ethernet_hdr sr_ethernet_hdr_t;
 
 enum sr_ip_protocol {
   ip_protocol_icmp = 0x0001,
+  ip_protocol_tcp = 0x0006
 };
 
 enum sr_ethertype {
