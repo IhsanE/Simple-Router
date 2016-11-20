@@ -221,65 +221,6 @@ int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type) {
 
 }
 
-/* Insert a mapping into the linked list of mappings for this (ip_int, aux_int) pair. If a 
-mapping already exists, add a new connection with (ip_dest, port_dest, state) to the list of 
-connections for that mapping. If a connection already exists, update the time field and the state. */
-struct sr_nat_mapping *sr_nat_insert_tcp_mapping(struct sr_nat *nat,
-	uint32_t ip_int, uint16_t aux_int, uint32_t ip_dest,
-  uint16_t port_dest) {
-	pthread_mutex_lock(&(nat->lock));
-
-	/* handle insert here, create a mapping, and then return a copy of it */
-	struct sr_nat_mapping *new_entry = NULL;
-	struct sr_nat_mapping *copy = (struct sr_nat_mapping *) malloc(sizeof(struct sr_nat_mapping));
-	struct sr_nat_mapping *mapping = nat->mappings;
-
-	time_t curtime = time(NULL);
-
-	/* If in list, update time */
-	while (mapping) {
-		if (
-			(mapping->type == nat_mapping_tcp) &&
-			(mapping->ip_int == ip_int) &&
-			(mapping->aux_int == aux_int)
-		) {
-			printf("FOUND\n");
-			mapping->last_updated = curtime;
-			sr_nat_update_tcp_connection(mapping, ip_dest, port_dest);
-			memcpy(copy, mapping, sizeof(struct sr_nat_mapping));
-			break;
-		}
-		mapping = mapping->next;
-	}
-	/* If NOT in list, return new object */
-	if (mapping == NULL) {
-		printf("NOT FOUND\n");
-		new_entry =	(struct sr_nat_mapping *) malloc(sizeof(struct sr_nat_mapping));
-		struct sr_nat_connection *new_connection = (struct sr_nat_connection *) malloc(sizeof(struct sr_nat_connection));
-
-		new_connection->ip_dest = ip_dest;
-		new_connection->port_dest = port_dest;
-		new_connection->last_updated = curtime;
-		new_connection->state = tcp_state_syn_sent;
-
-		new_entry->ip_int = ip_int;
-		new_entry->aux_int = aux_int;
-		new_entry->ip_ext = 2889876225;
-		new_entry->aux_ext = htons(generate_port(nat));
-		new_entry->last_updated = curtime;
-		new_entry->conns = new_connection;
-		new_entry->type = nat_mapping_tcp;
-
-		new_entry->next = nat->mappings;
-		nat->mappings = new_entry;
-
-		memcpy(copy, new_entry, sizeof(struct sr_nat_mapping));
-	}
-
-	pthread_mutex_unlock(&(nat->lock));
-	return copy;
-}
-
 void sr_nat_update_tcp_connection(struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest) {
 	struct sr_nat_connection *current_connection = mapping->conns;
 	time_t curtime = time(NULL);
