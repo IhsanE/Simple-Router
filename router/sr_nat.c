@@ -102,7 +102,7 @@ struct sr_nat_mapping *sr_nat_lookup_external(struct sr_nat *nat,
 	struct sr_nat_mapping *mapping = nat->mappings;
 
 	while (mapping) {
-		if ((mapping->type == type) && (mapping->aux_ext == aux_ext)) {
+		if ((mapping->type == type) && (mapping->aux_ext == ntohs(aux_ext))) {
 			copy = (struct sr_nat_mapping *) malloc(sizeof(struct sr_nat_mapping));
 			memcpy(copy, mapping, sizeof(struct sr_nat_mapping));
 			break;

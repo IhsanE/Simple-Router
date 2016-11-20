@@ -315,7 +315,7 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 			sr_nat_insert_tcp_connection(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port);
 		}
 	}
-	tcp_header->src_port = internal_mapping->aux_ext;
+	tcp_header->src_port = htons(internal_mapping->aux_ext);
 	ip_header->ip_src = htonl(internal_mapping->ip_ext);
 	forwarding_logic(sr, packet, len, interface);
 
