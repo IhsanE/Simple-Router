@@ -160,10 +160,10 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 	printf("IP INT: %d\n", (int)ip_int);
 	printf("AUX INT: %d\n", (int)aux_int);
 
-	print_nat_mappings(nat);
-
 		/* If in list, update time */
 		while (mapping) {
+			printf("mapping IP INT: %d\n", (int)mapping->ip_int);
+			printf("mapping AUX INT: %d\n", (int)mapping->aux_int);
 			if (
 				(mapping->type == type) &&
 				(mapping->ip_int == ip_int) &&
@@ -207,7 +207,7 @@ int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type) {
 		struct sr_nat_mapping * mapping = NULL;
 		int not_found = 0;
 		int port = 1024;
-/*		while (1) {
+		while (1) {
 			mapping = nat->mappings;
 			while (mapping) {
 				if (mapping->aux_ext == port) {
@@ -222,7 +222,7 @@ int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type) {
 			} else {
 				break;
 			}
-		}*/
+		}
 		return port;		
 	}
 
@@ -319,23 +319,4 @@ void sr_nat_insert_tcp_connection(struct sr_nat *nat, struct sr_nat_mapping *map
 	new_connection->next = mapping->conns;
 	mapping->conns = new_connection;
 	pthread_mutex_unlock(&(nat->lock));
-}
-
-void print_nat_mappings(struct sr_nat *nat){
-
-    assert(nat);
-    
-    struct sr_nat_mapping *mapping = nat->mappings;
-    while(mapping){
-        printf("************************\n");
-        printf("\nip_int: %d", mapping->ip_int);
-        printf("\naux_int: %d\n", mapping->aux_int);
-        printf("\nip_ext: %d", mapping->ip_ext));
-        printf("\naux_ext: %d\n", mapping->aux_ext);
-        printf("\n type: %i",mapping->type);
-        
-        mapping = mapping->next;
-    }
-
-    return;
 }
