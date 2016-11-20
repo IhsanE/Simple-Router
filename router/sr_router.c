@@ -300,7 +300,7 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 	
 	if (connection) {
 		if ((ntohs(tcp_header->flags) & tcp_flag_ack) == tcp_flag_ack) {
-			sr_nat_update_connection_state(sr->nat, internal_mapping, ip_header->ip_src, tcp_header->src_port, tcp_state_syn_recv, tcp_state_established);				
+			sr_nat_update_connection_state(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port, tcp_state_syn_recv, tcp_state_established);				
 		} else if (tcp_header->flags == 0) {
 			/* need to check if there is a connection, if so, forward it*/
 			if (connection->state != tcp_state_established) {
@@ -308,19 +308,16 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 				return;
 			}
 		}
-		tcp_header->dest_port = internal_mapping->aux_int;
-		ip_header->ip_dst = internal_mapping->ip_int;
-		forwarding_logic(sr, packet, len, interface);		
 		free(connection);
 		/* if FIN ACK */
 	} else {
 		if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn) {
 			sr_nat_insert_tcp_connection(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port);
 		}
-		tcp_header->dest_port = internal_mapping->aux_int;
-		ip_header->ip_dst = internal_mapping->ip_int;
-		forwarding_logic(sr, packet, len, interface);
 	}
+	tcp_header->src_port = internal_mapping->aux_ext;
+	ip_header->ip_src = internal_mapping->ip_ext;
+	forwarding_logic(sr, packet, len, interface);
 
 	free(internal_mapping);
 }
