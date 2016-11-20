@@ -178,7 +178,7 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 			new_entry->ip_int = ip_int;
 			new_entry->aux_int = aux_int;
 			new_entry->ip_ext = 2889876225;
-			new_entry->aux_ext = EXT_ID;
+			new_entry->aux_ext = generate_aux_ext(nat, type);
 			new_entry->last_updated = time(NULL);
 			new_entry->conns = NULL;
 			new_entry->type = nat_mapping_icmp;
@@ -193,27 +193,32 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 	return copy;
 }
 
-int generate_port(struct sr_nat *nat) {
-	struct sr_nat_mapping * mapping = NULL;
-	int not_found = 0;
-	int port = 1024;
-	while (1) {
-		mapping = nat->mappings;
-		while (mapping) {
-			if (mapping->aux_ext == port) {
-				not_found = 1;
+int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type) {
+	if (type == nat_mapping_icmp) {
+		return EXT_ID++;
+	} else {
+		struct sr_nat_mapping * mapping = NULL;
+		int not_found = 0;
+		int port = 1024;
+		while (1) {
+			mapping = nat->mappings;
+			while (mapping) {
+				if (mapping->aux_ext == port) {
+					not_found = 1;
+					break;
+				}
+				mapping = mapping->next;
+			}
+			if (not_found == 1){
+				port = 1024 + (port+1)%(65535 - 1024);
+				not_found = 0;
+			} else {
 				break;
 			}
-			mapping = mapping->next;
 		}
-		if (not_found == 1){
-			port = 1024 + (port+1)%(65535 - 1024);
-			not_found = 0;
-		} else {
-			break;
-		}
+		return port;		
 	}
-	return port;
+
 }
 
 /* Insert a mapping into the linked list of mappings for this (ip_int, aux_int) pair. If a 
