@@ -84,9 +84,6 @@ struct sr_nat_mapping *sr_nat_lookup_internal(struct sr_nat *nat,
 struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
   uint32_t ip_int, uint16_t aux_int, sr_nat_mapping_type type );
 
-struct sr_nat_mapping *sr_nat_insert_tcp_mapping(struct sr_nat *nat,
-  uint32_t ip_int, uint16_t aux_int, uint32_t ip_dest,
-  uint16_t port_dest);
 
 int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type);
 void sr_nat_update_tcp_connection(struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest);
@@ -95,4 +92,5 @@ struct sr_nat_connection* sr_nat_get_connection(struct sr_nat *nat, struct sr_na
 void sr_nat_update_connection_state(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest, sr_tcp_state expected_state, sr_tcp_state new_state);
 void sr_nat_insert_tcp_connection(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest);
 
+void print_nat_mappings(struct sr_nat *nat);
 #endif

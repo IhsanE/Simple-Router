@@ -156,7 +156,12 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 	struct sr_nat_mapping *copy = (struct sr_nat_mapping *) malloc(sizeof(struct sr_nat_mapping));
 	struct sr_nat_mapping *mapping = nat->mappings;
 
-	
+	printf("new mapping parameters:\n");
+	printf("IP INT: %d\n", (int)ip_int);
+	printf("AUX INT: %d\n", (int)aux_int);
+
+	print_nat_mappings(nat);
+
 		/* If in list, update time */
 		while (mapping) {
 			if (
@@ -312,4 +317,25 @@ void sr_nat_insert_tcp_connection(struct sr_nat *nat, struct sr_nat_mapping *map
 	new_connection->next = mapping->conns;
 	mapping->conns = new_connection;
 	pthread_mutex_unlock(&(nat->lock));
+}
+
+void print_nat_mappings(struct sr_nat *nat){
+
+    assert(nat);
+    
+    struct sr_nat_mapping *mapping = nat->mappings;
+    while(mapping){
+        printf("************************\n");
+        printf("\nip_int: ");
+        print_addr_ip_int(htonl(mapping->ip_int));
+        printf("\naux_int: %d\n", mapping->aux_int);
+        printf("\nip_ext: ");
+        print_addr_ip_int(htonl(mapping->ip_ext));
+        printf("\naux_ext: %d\n", mapping->aux_ext);
+        printf("\n type: %i",mapping->type);
+        
+        mapping = mapping->next;
+    }
+
+    return;
 }
