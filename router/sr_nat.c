@@ -188,9 +188,7 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 			new_entry->conns = NULL;
 			new_entry->type = type;
 
-			if (nat->mappings != NULL) {
-				new_entry->next = nat->mappings;
-			}
+			new_entry->next = nat->mappings;
 			nat->mappings = new_entry;				
 
 			memcpy(copy, new_entry, sizeof(struct sr_nat_mapping));
