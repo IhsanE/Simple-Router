@@ -316,7 +316,7 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 		}
 	}
 	tcp_header->src_port = internal_mapping->aux_ext;
-	ip_header->ip_src = internal_mapping->ip_ext;
+	ip_header->ip_src = htonl(internal_mapping->ip_ext);
 	forwarding_logic(sr, packet, len, interface);
 
 	free(internal_mapping);
