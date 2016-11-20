@@ -100,6 +100,7 @@ void modify_send_icmp_net_unreachable(struct sr_instance* sr, uint8_t * packet, 
 void modify_send_icmp_host_unreachable(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface);
 int handle_icmp(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface);
 int handle_ip_for_us(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface);
+void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface, struct sr_rt * routing_entry);
 int is_ip_checksum_valid (uint8_t * packet);
 struct sr_arpentry * arp_cache_contains_entry(struct sr_instance* sr, struct sr_rt * entry);
 void forward_packet(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface, unsigned char * dest_mac);
