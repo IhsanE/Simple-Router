@@ -244,16 +244,16 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 	sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 	uint16_t SYN_FLAG = 2;
-	printf("%d\n", (tcp_header->flags & SYN_FLAG)):
-	printf("NTOHS BOI: %d\n", (ntohs(tcp_header->flags) & SYN_FLAG)):
-	if ((tcp_header->flags & SYN_FLAG) == SYN_FLAG) {
+	uint16_t ACK_FLAG = 16;
+	if ((ntohs(tcp_header->flags) & SYN_FLAG) == SYN_FLAG) {
 		/* SYN flag is set */
 		struct sr_nat_mapping *mapping = sr_nat_insert_tcp_mapping(sr->nat, ip_header->ip_src, 
 			tcp_header->src_port, ip_header->ip_dst, tcp_header->dest_port);
 		tcp_header->src_port = mapping->aux_ext;
 		ip_header->ip_src = htonl(mapping->ip_ext);
+		print_hdrs(packet, len);
 		handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
-	} else if ((tcp_header->control & 16) == 16) {
+	} else if ((ntohs(tcp_header->flags) & ACK_FLAG) == ACK_FLAG) {
 		/* ACK flag is set, update connection state */
 		/*  IMPLEMENT THIS!
 		sr_nat_update_tcp_connection(struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest) */
