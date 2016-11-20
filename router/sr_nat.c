@@ -181,7 +181,7 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 			new_entry->aux_ext = generate_aux_ext(nat, type);
 			new_entry->last_updated = time(NULL);
 			new_entry->conns = NULL;
-			new_entry->type = nat_mapping_icmp;
+			new_entry->type = type;
 
 			new_entry->next = nat->mappings;
 			nat->mappings = new_entry;
