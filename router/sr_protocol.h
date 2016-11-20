@@ -139,6 +139,12 @@ struct sr_tcp_hdr {
 } __attribute__ ((packed)) ;
 typedef struct sr_tcp_hdr sr_tcp_hdr_t;
 
+enum sr_tcp_flags {
+  tcp_flag_syn = 0x0002,
+  tcp_flag_ack = 0x0010,
+  tcp_flag_fin = 0x0001,
+  tcp_flag_rst = 0x0004,
+};
 
 /*
  * Structure of an internet header, naked of options.

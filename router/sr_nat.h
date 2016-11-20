@@ -91,4 +91,9 @@ struct sr_nat_mapping *sr_nat_insert_tcp_mapping(struct sr_nat *nat,
 int generate_port(struct sr_nat *nat);
 
 void sr_nat_update_tcp_connection(struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest);
+
+struct sr_nat_connection* sr_nat_get_connection(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest);
+void sr_nat_update_connection_state(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest, sr_tcp_state expected_state, sr_tcp_state new_state);
+void sr_nat_insert_tcp_connection(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest);
+
 #endif

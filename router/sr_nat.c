@@ -303,3 +303,67 @@ void sr_nat_update_tcp_connection(struct sr_nat_mapping *mapping, uint32_t ip_de
 		mapping->conns = new_connection;
 	}
 }
+
+/* Return the connection specified by (ip_dest, port_dest) in mapping->conns. If it doesn't exist, 
+return NULL */
+struct sr_nat_connection* sr_nat_get_connection(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest) {
+	struct sr_nat_connection *current_connection = mapping->conns;
+	struct sr_nat_connection *copy = NULL;
+
+	pthread_mutex_lock(&(nat->lock));
+
+	while (current_connection) {
+		if (
+			(current_connection->ip_dest == ip_dest) &&
+			(current_connection->port_dest == port_dest)
+		) {
+			copy = (struct sr_nat_connection *) malloc(sizeof(struct sr_nat_connection));
+			memcpy(copy, current_connection, sizeof(struct sr_nat_connection));
+			break;
+		}
+		current_connection = current_connection->next;
+	}
+
+	pthread_mutex_unlock(&(nat->lock));
+
+	return copy;
+}
+
+/* Return the connection specified by (ip_dest, port_dest) in mapping->conns. If it doesn't exist, 
+return NULL */
+void sr_nat_update_connection_state(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest, sr_tcp_state expected_state,
+	sr_tcp_state new_state) {
+	struct sr_nat_connection *current_connection = mapping->conns;
+
+	pthread_mutex_lock(&(nat->lock));
+
+	while (current_connection) {
+		if (
+			(current_connection->ip_dest == ip_dest) &&
+			(current_connection->port_dest == port_dest)
+		) {
+			if (current_connection->state == expected_state) {
+				current_connection->state = new_state;
+			}
+			break;
+		}
+		current_connection = current_connection->next;
+	}
+
+	pthread_mutex_unlock(&(nat->lock));
+}
+
+void sr_nat_insert_tcp_connection(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest) {
+	pthread_mutex_lock(&(nat->lock));
+	time_t curtime = time(NULL);
+	/* found connection with ip/port */
+	struct sr_nat_connection *new_connection = (struct sr_nat_connection *) malloc(sizeof(struct sr_nat_connection));
+	new_connection->ip_dest = ip_dest;
+	new_connection->port_dest = port_dest;
+	new_connection->last_updated = curtime;
+	new_connection->state = tcp_state_syn_sent;
+
+	new_connection->next = mapping->conns;
+	mapping->conns = new_connection;
+	pthread_mutex_unlock(&(nat->lock));
+}
