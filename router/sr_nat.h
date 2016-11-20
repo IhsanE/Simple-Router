@@ -88,8 +88,7 @@ struct sr_nat_mapping *sr_nat_insert_tcp_mapping(struct sr_nat *nat,
   uint32_t ip_int, uint16_t aux_int, uint32_t ip_dest,
   uint16_t port_dest);
 
-int generate_port(struct sr_nat *nat);
-
+int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type);
 void sr_nat_update_tcp_connection(struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest);
 
 struct sr_nat_connection* sr_nat_get_connection(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest);
