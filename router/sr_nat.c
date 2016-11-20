@@ -260,7 +260,7 @@ struct sr_nat_mapping *sr_nat_insert_tcp_mapping(struct sr_nat *nat,
 		new_entry->ip_int = ip_int;
 		new_entry->aux_int = aux_int;
 		new_entry->ip_ext = 2889876225;
-		new_entry->aux_ext = generate_port(nat);
+		new_entry->aux_ext = htons(generate_port(nat));
 		new_entry->last_updated = curtime;
 		new_entry->conns = new_connection;
 		new_entry->type = nat_mapping_tcp;
