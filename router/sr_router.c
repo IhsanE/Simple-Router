@@ -168,16 +168,6 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 				/* INTERNAL 10.0.1.1, respond as before : handle_ip_for_us(sr, packet, len, interface); */
 				sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 				if (strcmp(interface, "eth1") == 0) {
-
-					struct sr_if * if_list = sr->if_list;
-					while(if_list) {
-						if (strcmp(if_list->name, "eth1") == 0) {
-							break;
-						}
-						if_list = if_list->next;
-					}
-
-					ip_header->ip_dst = if_list->ip;
 					handle_ip_for_us(sr, packet, len, interface);
 					return;
 				}
