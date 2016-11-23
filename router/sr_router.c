@@ -186,9 +186,6 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 						/* Change dest IP and icmp id*/
 						icmp_header->icmp_id = external_mapping->aux_int;
 						ip_header->ip_dst = external_mapping->ip_int;
-
-
-						ip_header->ip_src = get_internal_ip(sr);
 						icmp_header->icmp_sum = 0; 
 						icmp_header->icmp_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 
 						forwarding_logic(sr, packet, len, interface);
@@ -216,6 +213,8 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 									connection->state = tcp_state_syn_recv;
 								}
 	*/							tcp_header->dest_port = external_mapping->aux_int;
+								tcp_header->checksum = 0; 
+								tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 								
 								ip_header->ip_dst = external_mapping->ip_int;
 								forwarding_logic(sr, packet, len, interface);								
 							}					
@@ -294,16 +293,6 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 	}
 }
 
-uint32_t get_internal_ip(struct sr_instance* sr) {
-	struct sr_if * if_list = sr->if_list;
-	while(if_list) {
-	    if (strncmp(if_list->name, "eth1", 4) == 0) {
-	        break;
-	    }
-	    if_list = if_list->next;
-	}
-	return if_list->ip;
-}
 void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface, struct sr_rt * routing_entry) {
 	sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
@@ -334,6 +323,8 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 		}
 	}
 	tcp_header->src_port = htons(internal_mapping->aux_ext);
+	tcp_header->checksum = 0; 
+	tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 
 	ip_header->ip_src = internal_mapping->ip_ext;
 	forwarding_logic(sr, packet, len, interface);
 
