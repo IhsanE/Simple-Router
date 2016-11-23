@@ -8,6 +8,8 @@
 #include <string.h>
 #include <pthread.h>
 
+struct sr_instance;
+
 typedef enum {
   nat_mapping_icmp,
   nat_mapping_tcp
@@ -50,9 +52,8 @@ struct sr_nat_mapping {
 
 typedef struct sr_nat {
   /* add any fields here */
+  struct sr_instance * sr_instance;
   struct sr_nat_mapping *mappings;
-  uint32_t ip_external;
-
   int tcpTransitoryTimeout;
   int tcpEstablishedTimeout;
   int icmpTimeout;

@@ -176,17 +176,8 @@ int main(int argc, char **argv)
     if (isNat) {
         sr.nat = malloc(sizeof(sr_nat_t));
 
-        struct sr_if * if_list = sr.if_list;
-        sr_print_if_list(&sr);
-        while(if_list) {
-            if (strcmp(if_list->name, "eth2") == 0) {
-                break;
-            }
-            if_list = if_list->next;
-        }
-
         sr_nat_init(sr.nat);
-        sr.nat->ip_external = if_list->ip;
+        sr.nat->sr_instance = &sr;
         sr.nat->tcpTransitoryTimeout = tcpTransitoryTimeout;
         sr.nat->tcpEstablishedTimeout = tcpEstablishedTimeout;
         sr.nat->icmpTimeout = icmpTimeout;

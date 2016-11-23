@@ -9,6 +9,7 @@
 #include "sr_protocol.h"
 #include "sr_arpcache.h"
 #include "sr_utils.h"
+#include "sr_router.h"
 
 int EXT_ID = 1;
 
@@ -175,7 +176,15 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 			new_entry =	(struct sr_nat_mapping *) malloc(sizeof(struct sr_nat_mapping));
 			new_entry->ip_int = ip_int;
 			new_entry->aux_int = aux_int;
-			new_entry->ip_ext = nat->ip_external;
+
+			struct sr_if * if_list = nat->sr_instance->if_list;
+			while(if_list) {
+			    if (strcmp(if_list->name, "eth2") == 0) {
+			        break;
+			    }
+			    if_list = if_list->next;
+			}
+			new_entry->ip_ext = if_list->ip;
 			new_entry->aux_ext = generate_aux_ext(nat, type);
 			new_entry->last_updated = time(NULL);
 			new_entry->conns = NULL;
