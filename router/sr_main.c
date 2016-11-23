@@ -176,6 +176,7 @@ int main(int argc, char **argv)
         sr.nat = malloc(sizeof(sr_nat_t));
 
         struct sr_if * if_list = sr.if_list;
+        sr_print_if_list(&sr);
         while(if_list) {
             if (strcmp(if_list->name, "eth2") == 0) {
                 break;
