@@ -173,7 +173,6 @@ int main(int argc, char **argv)
 
     /* if nat enabled, init the nat struct in sr */
     if (isNat) {
-        printf("I AM USING THE NAT ARG!!\n");
         sr.nat = malloc(sizeof(sr_nat_t));
 
         sr_nat_init(sr.nat);
@@ -182,7 +181,6 @@ int main(int argc, char **argv)
         sr.nat->tcpEstablishedTimeout = tcpEstablishedTimeout;
         sr.nat->icmpTimeout = icmpTimeout;
     } else {
-        printf("NAT ARG IS NULL NULL NULL NULL \n");
         sr.nat = NULL;
     }
 

@@ -62,7 +62,7 @@ void *sr_nat_timeout(void *nat_ptr) {  /* Periodic Timout handling */
 		struct sr_nat_mapping *mapping = nat->mappings;
 		struct sr_nat_mapping *to_free = NULL;
 		struct sr_nat_mapping *prev = NULL;
-		
+
 		while (mapping) {
 			if (mapping->type == nat_mapping_icmp) {
 				if (difftime(curtime,mapping->last_updated) > nat->icmpTimeout) {
@@ -82,7 +82,7 @@ void *sr_nat_timeout(void *nat_ptr) {  /* Periodic Timout handling */
 				mapping = mapping->next;
 			}
 		}
-		
+
 
 		pthread_mutex_unlock(&(nat->lock));
 	}
@@ -109,7 +109,7 @@ struct sr_nat_mapping *sr_nat_lookup_external(struct sr_nat *nat,
 		}
 		mapping = mapping->next;
 	}
-	
+
 	pthread_mutex_unlock(&(nat->lock));
 	return copy;
 }
@@ -156,20 +156,14 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 	struct sr_nat_mapping *copy = (struct sr_nat_mapping *) malloc(sizeof(struct sr_nat_mapping));
 	struct sr_nat_mapping *mapping = nat->mappings;
 
-	printf("new mapping parameters:\n");
-	printf("IP INT: %d\n", (int)ip_int);
-	printf("AUX INT: %d\n", (int)aux_int);
 
 		/* If in list, update time */
 		while (mapping) {
-			printf("mapping IP INT: %d\n", (int)mapping->ip_int);
-			printf("mapping AUX INT: %d\n", (int)mapping->aux_int);
 			if (
 				(mapping->type == type) &&
 				(mapping->ip_int == ip_int) &&
 				(mapping->aux_int == aux_int)
 			) {
-				printf("FOUND\n");
 				mapping->last_updated = time(NULL);
 				memcpy(copy, mapping, sizeof(struct sr_nat_mapping));
 				break;
@@ -178,7 +172,6 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 		}
 		/* If NOT in list, return new object */
 		if (mapping == NULL) {
-			printf("NOT FOUND\n");
 			new_entry =	(struct sr_nat_mapping *) malloc(sizeof(struct sr_nat_mapping));
 			new_entry->ip_int = ip_int;
 			new_entry->aux_int = aux_int;
@@ -189,7 +182,7 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 			new_entry->type = type;
 
 			new_entry->next = nat->mappings;
-			nat->mappings = new_entry;				
+			nat->mappings = new_entry;
 
 			memcpy(copy, new_entry, sizeof(struct sr_nat_mapping));
 		}
@@ -221,7 +214,7 @@ int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type) {
 				break;
 			}
 		}
-		return port;		
+		return port;
 	}
 
 }
@@ -255,7 +248,7 @@ void sr_nat_update_tcp_connection(struct sr_nat_mapping *mapping, uint32_t ip_de
 	}
 }
 
-/* Return the connection specified by (ip_dest, port_dest) in mapping->conns. If it doesn't exist, 
+/* Return the connection specified by (ip_dest, port_dest) in mapping->conns. If it doesn't exist,
 return NULL */
 struct sr_nat_connection* sr_nat_get_connection(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest) {
 	struct sr_nat_connection *current_connection = mapping->conns;
@@ -280,7 +273,7 @@ struct sr_nat_connection* sr_nat_get_connection(struct sr_nat *nat, struct sr_na
 	return copy;
 }
 
-/* Return the connection specified by (ip_dest, port_dest) in mapping->conns. If it doesn't exist, 
+/* Return the connection specified by (ip_dest, port_dest) in mapping->conns. If it doesn't exist,
 return NULL */
 void sr_nat_update_connection_state(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest, sr_tcp_state expected_state,
 	sr_tcp_state new_state) {
