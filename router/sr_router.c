@@ -265,7 +265,7 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 							sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 							struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
 							icmp_header->icmp_id = htons(mapping->aux_ext);
-							ip_header->ip_src = htonl(mapping->ip_ext);
+							ip_header->ip_src = mapping->ip_ext;
 							icmp_header->icmp_sum = 0; 
 							icmp_header->icmp_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 
 							handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
@@ -321,7 +321,7 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 		}
 	}
 	tcp_header->src_port = htons(internal_mapping->aux_ext);
-	ip_header->ip_src = htonl(internal_mapping->ip_ext);
+	ip_header->ip_src = internal_mapping->ip_ext;
 	forwarding_logic(sr, packet, len, interface);
 
 	free(internal_mapping);
