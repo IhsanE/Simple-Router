@@ -157,83 +157,85 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 	if (is_ip_checksum_valid(packet)) {
 		/* FOR US */
 		if (is_ip_packet_matches_interfaces(sr, packet)) {
-			/* Nat DISABLED */
-		if (sr->nat == NULL) {
-			handle_ip_for_us(sr, packet, len, interface);
-		}
-
-		/* Nat ENABLED */
-		else {
-
-			/* INTERNAL 10.0.1.1, respond as before : handle_ip_for_us(sr, packet, len, interface); */
-			if (strcmp(interface, "eth1") == 0) {
-				handle_ip_for_us(sr, packet, len, interface);		
+				/* Nat DISABLED */
+			if (sr->nat == NULL) {
+				handle_ip_for_us(sr, packet, len, interface);
+				return;
 			}
 
-			sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-			if (ip_header->ip_p == ip_protocol_icmp) {
-				/* EXTERNAL 172.64.3.1, check if in mappings */
+			/* Nat ENABLED */
+			else {
 
-					/* IN: route */
-					/* OUT: drop */
-				sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-				struct sr_nat_mapping *external_mapping = sr_nat_lookup_external(sr->nat, icmp_header->icmp_id, nat_mapping_icmp);
-				/* forward to internal host */
-				if (external_mapping) {
-
-					/* Change dest IP and icmp id*/
-					icmp_header->icmp_id = external_mapping->aux_int;
-					ip_header->ip_dst = external_mapping->ip_int;
-
-					forwarding_logic(sr, packet, len, interface);
-					free(external_mapping);
+				/* INTERNAL 10.0.1.1, respond as before : handle_ip_for_us(sr, packet, len, interface); */
+				if (strcmp(interface, "eth1") == 0) {
+					handle_ip_for_us(sr, packet, len, interface);
+					return;
 				}
-				/*ELSE: DROP*/
-			} else if (ip_header->ip_p == ip_protocol_tcp) {
-				/* external server sent packet for us */
-				/* check mappings */
-				sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-				struct sr_nat_mapping *external_mapping = sr_nat_lookup_external(sr->nat, tcp_header->dest_port, nat_mapping_tcp);
 
-				if (external_mapping) {
-					/* check if there is a connection */
-					struct sr_nat_connection* connection = sr_nat_get_connection(sr->nat, external_mapping, ip_header->ip_src, tcp_header->src_port);
-					
-					if (connection) {
-						/* if SYN (from server) */
-						if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn) {
+				sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+				if (ip_header->ip_p == ip_protocol_icmp) {
+					/* EXTERNAL 172.64.3.1, check if in mappings */
 
-							sr_nat_update_connection_state(sr->nat, external_mapping, ip_header->ip_src, tcp_header->src_port, tcp_state_syn_sent, tcp_state_syn_recv);
-							/* if syn_sent */
-/*							if (connection->state == tcp_state_syn_sent) {
-								 set state to syn_recv 
-								connection->state = tcp_state_syn_recv;
-							}
-*/							tcp_header->dest_port = external_mapping->aux_int;
-							ip_header->ip_dst = external_mapping->ip_int;
-							forwarding_logic(sr, packet, len, interface);								
-						}					
-						/* if FIN ACK */
-						free(connection);
+						/* IN: route */
+						/* OUT: drop */
+					sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+					struct sr_nat_mapping *external_mapping = sr_nat_lookup_external(sr->nat, icmp_header->icmp_id, nat_mapping_icmp);
+					/* forward to internal host */
+					if (external_mapping) {
+
+						/* Change dest IP and icmp id*/
+						icmp_header->icmp_id = external_mapping->aux_int;
+						ip_header->ip_dst = external_mapping->ip_int;
+
+						forwarding_logic(sr, packet, len, interface);
+						free(external_mapping);
 					}
+					/*ELSE: DROP*/
+				} else if (ip_header->ip_p == ip_protocol_tcp) {
+					/* external server sent packet for us */
+					/* check mappings */
+					sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+					struct sr_nat_mapping *external_mapping = sr_nat_lookup_external(sr->nat, tcp_header->dest_port, nat_mapping_tcp);
 
-					/* else */
-						/* check if SYN flag is set */
-						/* if SYN */
-							/* wait 6 seconds */
-							/* if client sends SYN for this connection, then drop this packet */
-							/* else */
-								/* send port unreachable for original packet */
+					if (external_mapping) {
+						/* check if there is a connection */
+						struct sr_nat_connection* connection = sr_nat_get_connection(sr->nat, external_mapping, ip_header->ip_src, tcp_header->src_port);
+						
+						if (connection) {
+							/* if SYN (from server) */
+							if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn) {
+
+								sr_nat_update_connection_state(sr->nat, external_mapping, ip_header->ip_src, tcp_header->src_port, tcp_state_syn_sent, tcp_state_syn_recv);
+								/* if syn_sent */
+	/*							if (connection->state == tcp_state_syn_sent) {
+									 set state to syn_recv 
+									connection->state = tcp_state_syn_recv;
+								}
+	*/							tcp_header->dest_port = external_mapping->aux_int;
+								ip_header->ip_dst = external_mapping->ip_int;
+								forwarding_logic(sr, packet, len, interface);								
+							}					
+							/* if FIN ACK */
+							free(connection);
+						}
+
 						/* else */
-							/* drop packet*/
-					free(external_mapping);
+							/* check if SYN flag is set */
+							/* if SYN */
+								/* wait 6 seconds */
+								/* if client sends SYN for this connection, then drop this packet */
+								/* else */
+									/* send port unreachable for original packet */
+							/* else */
+								/* drop packet*/
+						free(external_mapping);
 
-				} else {
-					/* JOHN THOMPSON */
+					} else {
+						/* JOHN THOMPSON */
 
+					}
 				}
 			}
-		}
 		/* FORWARD */
 		} else {
 			/*
@@ -250,37 +252,37 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 
 			/* NAT ENABLED */
 			else {
-    		if (!is_ttl_valid(packet)) {
-    			send_icmp_time_exceeded(sr, packet, len, interface);
-    			return;
-    		}
-    		struct sr_rt * routing_entry = longest_prefix_match(sr, packet);
-    		if (routing_entry) {
-    				sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-    				/* We found a match in the routing table */
-    				if (ip_header->ip_p == ip_protocol_icmp) {
-    							sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-    							struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
-    				icmp_header->icmp_id = htons(mapping->aux_ext);
-    				ip_header->ip_src = htonl(mapping->ip_ext);
-    					handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
-    				}
+				if (!is_ttl_valid(packet)) {
+					send_icmp_time_exceeded(sr, packet, len, interface);
+					return;
+				}
+				struct sr_rt * routing_entry = longest_prefix_match(sr, packet);
+				if (routing_entry) {
+						sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+						/* We found a match in the routing table */
+						if (ip_header->ip_p == ip_protocol_icmp) {
+									sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+									struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
+						icmp_header->icmp_id = htons(mapping->aux_ext);
+						ip_header->ip_src = htonl(mapping->ip_ext);
+							handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
+						}
 
-    				else if (ip_header->ip_p == ip_protocol_tcp) {
-    /*		  		sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-    					sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+						else if (ip_header->ip_p == ip_protocol_tcp) {
+		/*		  		sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+							sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
-    							struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
-    				icmp_header->icmp_id = mapping->aux_ext;
-    				ip_header->ip_src = htonl(mapping->ip_ext);
-    					handle_send_to_next_hop_ip(sr, packet, len, routing_entry);*/
-    					handle_tcp_packet_from_int(sr, packet, len, interface, routing_entry);
-    				}
-    		} else {
-    			/* didn't find match, need to send net unreachable */
-    			modify_send_icmp_net_unreachable(sr, packet, len, interface);
-    			/* Drop packet because no entry found in routing table */ 
-    		}
+									struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
+						icmp_header->icmp_id = mapping->aux_ext;
+						ip_header->ip_src = htonl(mapping->ip_ext);
+							handle_send_to_next_hop_ip(sr, packet, len, routing_entry);*/
+							handle_tcp_packet_from_int(sr, packet, len, interface, routing_entry);
+						}
+				} else {
+					/* didn't find match, need to send net unreachable */
+					modify_send_icmp_net_unreachable(sr, packet, len, interface);
+					/* Drop packet because no entry found in routing table */ 
+				}
 			}
 		}
 	}
