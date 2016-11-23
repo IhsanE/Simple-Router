@@ -297,7 +297,7 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 uint32_t get_internal_ip(struct sr_instance* sr) {
 	struct sr_if * if_list = sr->if_list;
 	while(if_list) {
-	    if (strcmp(if_list->name, "eth1") == 0) {
+	    if (strncmp(if_list->name, "eth1", 4) == 0) {
 	        break;
 	    }
 	    if_list = if_list->next;
