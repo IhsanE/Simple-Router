@@ -12,7 +12,6 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <stdio.h>
-#include "sr_nat.h"
 
 #include "sr_protocol.h"
 #include "sr_arpcache.h"
@@ -35,6 +34,8 @@
 struct sr_if;
 struct sr_rt;
 
+struct sr_nat;
+struct sr_nat_mapping;
 /* ----------------------------------------------------------------------------
  * struct sr_instance
  *
