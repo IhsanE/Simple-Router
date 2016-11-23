@@ -205,7 +205,7 @@ int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type) {
 		struct sr_nat_mapping * mapping = NULL;
 		int not_found = 0;
 		int port = 1024;
-/*		while (1) {
+		while (1) {
 			mapping = nat->mappings;
 			while (mapping) {
 				if (mapping->aux_ext == port) {
@@ -220,7 +220,7 @@ int generate_aux_ext(struct sr_nat *nat, sr_nat_mapping_type type) {
 			} else {
 				break;
 			}
-		}*/
+		}
 		return port;		
 	}
 

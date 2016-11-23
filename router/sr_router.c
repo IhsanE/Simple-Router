@@ -610,9 +610,9 @@ void modify_send_icmp_host_unreachable(struct sr_instance* sr, uint8_t * packet,
 int handle_icmp(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface) {
 	sr_icmp_hdr_t * icmp_header = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	uint8_t request = 8;
-	uint8_t reply = 0;
+	/*uint8_t reply = 0;
 	uint8_t unreachable = 3;
-	uint8_t time_exceeded = 11;
+	uint8_t time_exceeded = 11;*/
 
 	if (icmp_header->icmp_type == request) {
 		modify_send_icmp_reply(sr, packet, len, interface);
