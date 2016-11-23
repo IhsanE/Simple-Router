@@ -177,7 +177,7 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 						if_list = if_list->next;
 					}
 
-					ip_header->ip_src = if_list->ip;
+					ip_header->ip_src = htonl(if_list->ip);
 					handle_ip_for_us(sr, packet, len, interface);
 					return;
 				}
