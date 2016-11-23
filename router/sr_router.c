@@ -160,7 +160,6 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 				/* Nat DISABLED */
 			if (sr->nat == NULL) {
 				handle_ip_for_us(sr, packet, len, interface);
-				return;
 			}
 
 			/* Nat ENABLED */
@@ -186,7 +185,8 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 						/* Change dest IP and icmp id*/
 						icmp_header->icmp_id = external_mapping->aux_int;
 						ip_header->ip_dst = external_mapping->ip_int;
-
+						icmp_header->icmp_sum = 0; 
+						icmp_header->icmp_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 
 						forwarding_logic(sr, packet, len, interface);
 						free(external_mapping);
 					}
@@ -261,10 +261,12 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 						sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 						/* We found a match in the routing table */
 						if (ip_header->ip_p == ip_protocol_icmp) {
-									sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-									struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
-						icmp_header->icmp_id = htons(mapping->aux_ext);
-						ip_header->ip_src = htonl(mapping->ip_ext);
+							sr_icmp_t8_hdr_t * icmp_header = (sr_icmp_t8_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+							struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
+							icmp_header->icmp_id = htons(mapping->aux_ext);
+							ip_header->ip_src = htonl(mapping->ip_ext);
+							icmp_header->icmp_sum = 0; 
+							icmp_header->icmp_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 
 							handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
 						}
 
