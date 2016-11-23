@@ -51,6 +51,7 @@ struct sr_nat_mapping {
 typedef struct sr_nat {
   /* add any fields here */
   struct sr_nat_mapping *mappings;
+  uint32_t ip_external;
 
   int tcpTransitoryTimeout;
   int tcpEstablishedTimeout;
