@@ -309,14 +309,13 @@ void sr_nat_update_connection_state(struct sr_nat *nat, struct sr_nat_mapping *m
 void sr_nat_insert_tcp_connection(struct sr_nat *nat, struct sr_nat_mapping *mapping_cpy, uint32_t ip_dest, uint16_t port_dest) {
 	pthread_mutex_lock(&(nat->lock));
 	time_t curtime = time(NULL);
-	
+
 	struct sr_nat_mapping *mapping = nat->mappings;
-	
+
 	while (mapping) {
 		if (
 		(mapping->type == mapping_cpy->type) &&
-		(mapping->ip_int == mapping_cpy->ip_int) &&
-		(mapping->aux_int == mapping_cpy->aux_int)
+		(mapping->aux_ext == mapping_cpy->aux_ext)
 		) {
 			/* found connection with ip/port */
 			struct sr_nat_connection *new_connection = (struct sr_nat_connection *) malloc(sizeof(struct sr_nat_connection));
@@ -330,7 +329,7 @@ void sr_nat_insert_tcp_connection(struct sr_nat *nat, struct sr_nat_mapping *map
 		}
 		mapping = mapping->next;
 	}
-	
-	
+
+
 	pthread_mutex_unlock(&(nat->lock));
 }

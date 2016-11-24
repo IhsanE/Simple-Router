@@ -50,7 +50,7 @@ void sr_init(struct sr_instance* sr)
 		pthread_t thread;
 
 		pthread_create(&thread, &(sr->attr), sr_arpcache_timeout, sr);
-		
+
 		/* Add initialization code here! */
 
 } /* -- sr_init -- */
@@ -132,7 +132,7 @@ void arp_reply(struct sr_instance* sr, uint8_t * packet, unsigned int len, char*
 	sr_ethernet_hdr_t * ethernet_header = (sr_ethernet_hdr_t *)packet;
 	sr_arp_hdr_t * arp_header = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 	struct sr_if * interface_struct = sr_get_interface(sr, interface);
-	/* 
+	/*
 		 Set ARP op_code -> reply
 		 Set ARP target ip to source ip
 		 Set ARP source ip to our ip (from interface)
@@ -186,8 +186,8 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 						/* Change dest IP and icmp id*/
 						icmp_header->icmp_id = external_mapping->aux_int;
 						ip_header->ip_dst = external_mapping->ip_int;
-						icmp_header->icmp_sum = 0; 
-						icmp_header->icmp_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 
+						icmp_header->icmp_sum = 0;
+						icmp_header->icmp_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
 						forwarding_logic(sr, packet, len, interface);
 						free(external_mapping);
 					}
@@ -202,27 +202,41 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 					if (external_mapping) {
 						/* check if there is a connection */
 						struct sr_nat_connection* connection = sr_nat_get_connection(sr->nat, external_mapping, ip_header->ip_src, tcp_header->src_port);
-						
+
 						if (connection) {
 							/* if SYN (from server) */
 							if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn) {
 								sr_nat_update_connection_state(sr->nat, external_mapping, ip_header->ip_src, tcp_header->src_port, tcp_state_syn_sent, tcp_state_syn_recv);
 								/* if syn_sent */
 	/*							if (connection->state == tcp_state_syn_sent) {
-									 set state to syn_recv 
+									 set state to syn_recv
 									connection->state = tcp_state_syn_recv;
 								}
 	*/							tcp_header->dest_port = external_mapping->aux_int;
 								/*tcp_header->flags = ((20<<12) | (tcp_header->flags)); */
-								
-								tcp_header->checksum = 0; 
-								tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 								
+
+								tcp_header->checksum = 0;
+								tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
 								ip_header->ip_dst = external_mapping->ip_int;
-								forwarding_logic(sr, packet, len, interface);								
-							}					
+								forwarding_logic(sr, packet, len, interface);
+							}
 							/* if FIN ACK */
 							free(connection);
+						} else {
+							/* forward? */
+							sr_nat_insert_tcp_connection(sr->nat, external_mapping, ip_header->ip_src, tcp_header->src_port);
+							tcp_header->dest_port = external_mapping->aux_int;
+
+							tcp_header->checksum = 0;
+							tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
+							ip_header->ip_dst = external_mapping->ip_int;
+							forwarding_logic(sr, packet, len, interface);
 						}
+
+						free(external_mapping);
+
+					} else {
+						/* JOHN THOMPSON */
 
 						/* else */
 							/* check if SYN flag is set */
@@ -233,11 +247,6 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 									/* send port unreachable for original packet */
 							/* else */
 								/* drop packet*/
-						free(external_mapping);
-
-					} else {
-						/* JOHN THOMPSON */
-
 					}
 				}
 			}
@@ -270,16 +279,16 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 							struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
 							icmp_header->icmp_id = htons(mapping->aux_ext);
 							ip_header->ip_src = mapping->ip_ext;
-							icmp_header->icmp_sum = 0; 
-							icmp_header->icmp_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 
+							icmp_header->icmp_sum = 0;
+							icmp_header->icmp_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
 							handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
 						}
-					
+
 						else if (ip_header->ip_p == ip_protocol_tcp) {
 							/*RECEIVED TCP PACKET TO FORWARD*/
 							printf("I RECEIVED A TCP PACKET TO FORWARD\n");
 							print_addr_ip_int(ip_header->ip_dst);
-/*	
+/*
 				  		sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 							sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
@@ -292,7 +301,7 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 				} else {
 					/* didn't find match, need to send net unreachable */
 					modify_send_icmp_net_unreachable(sr, packet, len, interface);
-					/* Drop packet because no entry found in routing table */ 
+					/* Drop packet because no entry found in routing table */
 				}
 			}
 		}
@@ -308,12 +317,12 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 	if (internal_mapping == NULL) {
 		internal_mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, tcp_header->src_port, nat_mapping_tcp);
 	}
-	
+
 	struct sr_nat_connection* connection = sr_nat_get_connection(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port);
-	
+
 	if (connection) {
 		if ((ntohs(tcp_header->flags) & tcp_flag_ack) == tcp_flag_ack) {
-			sr_nat_update_connection_state(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port, tcp_state_syn_recv, tcp_state_established);				
+			sr_nat_update_connection_state(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port, tcp_state_syn_recv, tcp_state_established);
 		} else if (tcp_header->flags == 0) {
 			/* need to check if there is a connection, if so, forward it*/
 			if (connection->state != tcp_state_established) {
@@ -328,13 +337,13 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 			sr_nat_insert_tcp_connection(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port);
 		}
 		sr_nat_get_connection(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port);
-	
-		
+
+
 	}
 	tcp_header->src_port = htons(internal_mapping->aux_ext);
-	/*tcp_header->flags = ((20<<12) | (tcp_header->flags));*/ 
-	tcp_header->checksum = 0; 
-	tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 
+	/*tcp_header->flags = ((20<<12) | (tcp_header->flags));*/
+	tcp_header->checksum = 0;
+	tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
 	ip_header->ip_src = internal_mapping->ip_ext;
 	forwarding_logic(sr, packet, len, interface);
 
@@ -346,8 +355,8 @@ our arpcache. If we do, just forward the packet to that MAC address, otherwise
 we need to send an arprequest, and put this packet on the queue. */
 void handle_send_to_next_hop_ip(struct sr_instance* sr,
 	uint8_t * packet,
-	unsigned int len,  
-	struct sr_rt * routing_entry) 
+	unsigned int len,
+	struct sr_rt * routing_entry)
 {
 	struct sr_arpentry * arp_entry = arp_cache_contains_entry(sr, routing_entry);
 	if (arp_entry) {
@@ -390,10 +399,10 @@ struct sr_rt * longest_prefix_match(struct sr_instance* sr, uint8_t * packet) {
 	struct sr_rt *rt = sr->routing_table;
 
 	struct sr_rt* result = NULL;
-    
+
     while(rt != NULL) {
         if((rt->dest.s_addr & rt->mask.s_addr) == (dest_ip & rt->mask.s_addr)){
-            if(result == NULL || rt->mask.s_addr > result->mask.s_addr) 
+            if(result == NULL || rt->mask.s_addr > result->mask.s_addr)
                 result = rt;
         }
         rt = rt->next;
@@ -457,7 +466,7 @@ int check_ip_in_if_list(struct sr_instance* sr, uint32_t ip) {
 		}
 		if_list = if_list->next;
 	}
-	return 0; 
+	return 0;
 }
 
 int is_arp_reply_for_us(struct sr_instance* sr, uint8_t * packet) {
@@ -483,8 +492,8 @@ void modify_send_icmp(struct sr_instance* sr, uint8_t * packet, unsigned int len
 	/* Update ICMP header */
 	icmp_header->icmp_type = type;
 	icmp_header->icmp_code = code;
-	icmp_header->icmp_sum = 0; 
-	icmp_header->icmp_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 
+	icmp_header->icmp_sum = 0;
+	icmp_header->icmp_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
 
 	/* Update IP header */
 	ip_header->ip_ttl = INIT_TTL;
@@ -493,7 +502,7 @@ void modify_send_icmp(struct sr_instance* sr, uint8_t * packet, unsigned int len
 	ip_header->ip_len = htons(len - (sizeof(sr_ethernet_hdr_t)));
 	ip_header->ip_p = (uint8_t) 1;
 	ip_header->ip_dst = original_src;
-	
+
 	ethernet_header->ether_type = htons(ethertype_ip);
 	handle_ip_packets_for_us(sr, packet, len);
 	/* sr_send_packet(sr, packet, len, interface); */
@@ -534,7 +543,7 @@ void send_new_icmp_type11(struct sr_instance* sr, uint8_t * packet, unsigned int
 
 	sr_icmp_t11_hdr_t * type11_icmp_header = (sr_icmp_t11_hdr_t *)(new_packet->buf + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	struct sr_if * interface_struct = sr_get_interface(sr, interface);
-	
+
 	put_ip_header_in_icmp_data(type11_icmp_header->data, old_ip_header);
 
 	set_fields_in_icmp_type11_header(type11_icmp_header);
@@ -556,7 +565,7 @@ void set_fields_in_icmp_type11_header(sr_icmp_t11_hdr_t * type11_icmp_header) {
 	type11_icmp_header->unused = (uint32_t) 0;
 	type11_icmp_header->icmp_sum = (uint16_t) 0;
 
-	type11_icmp_header->icmp_sum = cksum(type11_icmp_header, sizeof(sr_icmp_t11_hdr_t)); 
+	type11_icmp_header->icmp_sum = cksum(type11_icmp_header, sizeof(sr_icmp_t11_hdr_t));
 }
 
 void modify_send_icmp_reply(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface) {
@@ -582,22 +591,22 @@ void modify_send_icmp_type3(struct sr_instance* sr, uint8_t * packet, unsigned i
 
 	sr_icmp_t3_hdr_t * type3_icmp_header = (sr_icmp_t3_hdr_t *)(new_packet->buf + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	struct sr_if * interface_struct = sr_get_interface(sr, interface);
-	
+
 	/* Update ICMP header */
 	type3_icmp_header->icmp_type = (uint8_t) 3;
 	type3_icmp_header->icmp_code = code;
 	type3_icmp_header->unused = (uint16_t) 0;
 	type3_icmp_header->next_mtu = (uint16_t) 1500;
 	type3_icmp_header->icmp_sum = (uint16_t) 0;
-	
+
 	put_ip_header_in_icmp_data(type3_icmp_header->data, old_ip_header);
 
-	type3_icmp_header->icmp_sum = cksum(type3_icmp_header, sizeof(sr_icmp_t3_hdr_t)); 
+	type3_icmp_header->icmp_sum = cksum(type3_icmp_header, sizeof(sr_icmp_t3_hdr_t));
 
 	set_ip_header_fields_new_icmp(ip_header, old_ip_header, sizeof(sr_icmp_t3_hdr_t));
 
 	if (code == (uint8_t) 3) {
-		ip_header->ip_src = old_ip_header->ip_dst;  
+		ip_header->ip_src = old_ip_header->ip_dst;
 	} else {
 		ip_header->ip_src = interface_struct->ip;
 	}
@@ -610,15 +619,15 @@ void modify_send_icmp_type3(struct sr_instance* sr, uint8_t * packet, unsigned i
 }
 
 void modify_send_icmp_port_unreachable(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface) {
-	modify_send_icmp_type3(sr, packet, len, interface, (uint8_t) 3);  
+	modify_send_icmp_type3(sr, packet, len, interface, (uint8_t) 3);
 }
 
 void modify_send_icmp_net_unreachable(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface) {
-	modify_send_icmp_type3(sr, packet, len, interface, (uint8_t) 0);  
+	modify_send_icmp_type3(sr, packet, len, interface, (uint8_t) 0);
 }
 
 void modify_send_icmp_host_unreachable(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface) {
-	modify_send_icmp_type3(sr, packet, len, interface, (uint8_t) 1);  
+	modify_send_icmp_type3(sr, packet, len, interface, (uint8_t) 1);
 }
 
 int handle_icmp(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface) {
@@ -639,7 +648,7 @@ int handle_ip_for_us(struct sr_instance* sr, uint8_t * packet, unsigned int len,
 	sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 	if (ip_header->ip_p == ip_protocol_icmp){
 		sr_icmp_hdr_t * icmp_header = (sr_icmp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-		uint16_t original_checksum = icmp_header->icmp_sum;  
+		uint16_t original_checksum = icmp_header->icmp_sum;
 		icmp_header->icmp_sum = (uint16_t) 0;
 		uint16_t check_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
 		if (check_sum == original_checksum) {
@@ -739,6 +748,6 @@ void forwarding_logic(struct sr_instance* sr, uint8_t * packet, unsigned int len
 	} else {
 		/* didn't find match, need to send net unreachable */
 		modify_send_icmp_net_unreachable(sr, packet, len, interface);
-		/* Drop packet because no entry found in routing table */ 
+		/* Drop packet because no entry found in routing table */
 	}
 }
