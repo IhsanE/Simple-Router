@@ -193,6 +193,7 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 					}
 					/*ELSE: DROP*/
 				} else if (ip_header->ip_p == ip_protocol_tcp) {
+					printf("TCP PACKET ADDRESSED TO ME\n");
 					/* external server sent packet for us */
 					/* check mappings */
 					sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
@@ -205,7 +206,6 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 						if (connection) {
 							/* if SYN (from server) */
 							if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn) {
-
 								sr_nat_update_connection_state(sr->nat, external_mapping, ip_header->ip_src, tcp_header->src_port, tcp_state_syn_sent, tcp_state_syn_recv);
 								/* if syn_sent */
 	/*							if (connection->state == tcp_state_syn_sent) {
@@ -213,6 +213,8 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 									connection->state = tcp_state_syn_recv;
 								}
 	*/							tcp_header->dest_port = external_mapping->aux_int;
+								/*tcp_header->flags = ((20<<12) | (tcp_header->flags)); */
+								
 								tcp_header->checksum = 0; 
 								tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 								
 								ip_header->ip_dst = external_mapping->ip_int;
@@ -272,9 +274,13 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 							icmp_header->icmp_sum = cksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 
 							handle_send_to_next_hop_ip(sr, packet, len, routing_entry);
 						}
-
+					
 						else if (ip_header->ip_p == ip_protocol_tcp) {
-		/*		  		sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+							/*RECEIVED TCP PACKET TO FORWARD*/
+							printf("I RECEIVED A TCP PACKET TO FORWARD\n");
+							print_addr_ip_int(ip_header->ip_dst);
+/*	
+				  		sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 							sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 
 									struct sr_nat_mapping *mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, icmp_header->icmp_id, nat_mapping_icmp);
@@ -294,15 +300,15 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 }
 
 void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface, struct sr_rt * routing_entry) {
-	sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+	sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
 	struct sr_nat_mapping *internal_mapping = sr_nat_lookup_internal(sr->nat, ip_header->ip_src, tcp_header->src_port, nat_mapping_tcp);
 
 	if (internal_mapping == NULL) {
 		internal_mapping = sr_nat_insert_mapping(sr->nat, ip_header->ip_src, tcp_header->src_port, nat_mapping_tcp);
 	}
-
+	
 	struct sr_nat_connection* connection = sr_nat_get_connection(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port);
 	
 	if (connection) {
@@ -321,8 +327,12 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 		if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn) {
 			sr_nat_insert_tcp_connection(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port);
 		}
+		sr_nat_get_connection(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port);
+	
+		
 	}
 	tcp_header->src_port = htons(internal_mapping->aux_ext);
+	/*tcp_header->flags = ((20<<12) | (tcp_header->flags));*/ 
 	tcp_header->checksum = 0; 
 	tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))); 
 	ip_header->ip_src = internal_mapping->ip_ext;
