@@ -376,25 +376,20 @@ int arp_cache_check_add_queue_remove (struct sr_arpcache *cache, unsigned char *
 
 struct sr_rt * longest_prefix_match(struct sr_instance* sr, uint8_t * packet) {
 	sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-	uint32_t ipaddr = ip_header->ip_dst;;
-	struct sr_rt *ptr;
-	uint32_t masked_ip;
-	uint32_t bestmask = 0;
-	uint32_t curmask = 0;
-	struct sr_rt *lm_ptr = NULL;
+	uint32_t dest_ip = ip_header->ip_dst;
+	struct sr_rt *rt = sr->routing_table;
 
-	for(ptr=sr->routing_table ; ptr != NULL ; ptr = ptr->next) {
-		masked_ip = ipaddr & (ptr->mask).s_addr;
-		curmask = (ptr->mask).s_addr;
+	struct sr_rt* result = NULL;
+    
+    while(rt != NULL) {
+        if((rt->dest.s_addr & rt->mask.s_addr) == (dest_ip & rt->mask.s_addr)){
+            if(result == NULL || rt->mask.s_addr > result->mask.s_addr) 
+                result = rt;
+        }
+        rt = rt->next;
+    }
 
-		if (masked_ip == (ptr->dest).s_addr) {
-			if(bestmask != -1 && (curmask > bestmask || curmask == -1)) {
-				lm_ptr = ptr;
-				bestmask = curmask;
-			}
-		}
-	}
-	return lm_ptr;
+    return result;
 }
 
 void set_ethernet_src_dst(sr_ethernet_hdr_t * ethernet_header, uint8_t * new_src, uint8_t * new_dst) {
