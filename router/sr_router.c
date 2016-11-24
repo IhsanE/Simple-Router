@@ -239,6 +239,21 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 						if (tcp_header->dest_port == htons(22)) {
 							modify_send_icmp_port_unreachable(sr, packet, len, interface);
 						}
+						else {
+							if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn && tcp_header->dest_port >= 1024) {
+								struct sr_possible_connection *new_conn = (struct sr_possible_connection *)malloc(sizeof(struct sr_possible_connection));
+								new_conn->ip = ip_header->ip_src;
+								new_conn->port = tcp_header->dest_port;
+								new_conn->recv_time = time(NULL);
+								new_conn->unsolicited_packet = packet;
+								new_conn->len = len;
+								new_conn->interface = interface;
+								new_conn->next = sr->nat->possible_conns;
+								sr->nat->possible_conns = new_conn;
+							} else {
+								modify_send_icmp_port_unreachable(sr, packet, len, interface);
+							}
+						}
 						/* else */
 							/* check if SYN flag is set */
 							/* if SYN */
@@ -349,7 +364,10 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 	if (connection) {
 		if ((ntohs(tcp_header->flags) & tcp_flag_ack) == tcp_flag_ack) {
 			sr_nat_update_connection_state(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port, tcp_state_syn_recv, tcp_state_established);
-		} else if (tcp_header->flags == 0) {
+		} else if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn) {
+			sr_nat_update_connection_state(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port, tcp_state_syn_listen, tcp_state_syn_sent);
+		}
+		else if (tcp_header->flags == 0) {
 			/* need to check if there is a connection, if so, forward it*/
 			if (connection->state != tcp_state_established) {
 				free(connection);
@@ -358,8 +376,25 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 		}
 		free(connection);
 		/* if FIN ACK */
-	} else {
+	} else {		
+
 		if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn) {
+			/* go through possible connections */
+			struct sr_possible_connection *curr_conn = sr->nat->possible_conns;
+			struct sr_possible_connection *prev_conn = NULL;
+			while(curr_conn) {
+				if (curr_conn->port == internal_mapping->aux_ext &&
+					curr_conn->ip == ip_header->ip_dst) {
+					if (prev_conn) {
+						prev_conn->next = curr_conn->next;
+					} else {
+						sr->nat->possible_conns = curr_conn->next;
+					}
+					free(curr_conn);
+					break;
+				}
+				curr_conn = curr_conn->next;
+			}
 			sr_nat_insert_tcp_connection(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port);
 		}
 		sr_nat_get_connection(sr->nat, internal_mapping, ip_header->ip_dst, tcp_header->dest_port);

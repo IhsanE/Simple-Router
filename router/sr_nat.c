@@ -79,10 +79,58 @@ void *sr_nat_timeout(void *nat_ptr) {  /* Periodic Timout handling */
 					prev = mapping;
 					mapping = mapping->next;
 				}
+			} else if (mapping->type == nat_mapping_tcp) {
+/*				conn = mapping->conns;
+				prev_conn = NULL;
+				while (conn) {
+					if (conn->state == tcp_state_syn_listen) {
+						if (difftime(curtime,conn->last_updated) >= 6) {
+							modify_send_icmp_port_unreachable(nat->sr_instance, conn->unsolicited_packet, conn->len, conn->interface);
+							conn_to_free = conn;
+							if (prev_conn) {
+								prev_conn->next = conn->next;
+							} else {
+								mapping->conns = conn->next;
+							}
+							conn = conn->next;
+							free(conn_to_free);
+						} else {
+							prev_conn = conn;
+							conn = conn->next;
+						}
+						prev_conn = conn;
+						conn = conn->next;
+					} else {
+						prev_conn = conn;
+						conn = conn->next;
+					}
+				}*/
+				mapping = mapping->next;
 			} else {
 				mapping = mapping->next;
 			}
 		}
+
+		struct sr_possible_connection *conn = nat->possible_conns;
+		struct sr_possible_connection *conn_to_free = NULL;
+		struct sr_possible_connection *prev_conn = NULL;
+
+		while (conn) {
+			if (difftime(curtime,conn->recv_time) >= 6) {
+				modify_send_icmp_port_unreachable(nat->sr_instance, conn->unsolicited_packet, conn->len, conn->interface);
+				conn_to_free = conn;
+				if (prev_conn) {
+					prev_conn->next = conn->next;
+				} else {
+					nat->possible_conns = conn->next;
+				}
+				conn = conn->next;
+				free(conn_to_free);
+			} else {
+				prev_conn = conn;
+				conn = conn->next;
+			}
+		}	
 
 
 		pthread_mutex_unlock(&(nat->lock));
@@ -286,9 +334,9 @@ struct sr_nat_connection* sr_nat_get_connection(struct sr_nat *nat, struct sr_na
 return NULL */
 void sr_nat_update_connection_state(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest, sr_tcp_state expected_state,
 	sr_tcp_state new_state) {
-	struct sr_nat_connection *current_connection = mapping->conns;
 
 	pthread_mutex_lock(&(nat->lock));
+	struct sr_nat_connection *current_connection = mapping->conns;
 
 	while (current_connection) {
 		if (
@@ -326,6 +374,39 @@ void sr_nat_insert_tcp_connection(struct sr_nat *nat, struct sr_nat_mapping *map
 
 			new_connection->next = mapping->conns;
 			mapping->conns = new_connection;
+		}
+		mapping = mapping->next;
+	}
+
+
+	pthread_mutex_unlock(&(nat->lock));
+}
+
+
+void sr_nat_insert_connection_packet(struct sr_nat *nat, struct sr_nat_mapping *mapping_cpy, uint32_t ip_dest, uint16_t port_dest, uint8_t * packet, unsigned int len, char * interface) {
+	pthread_mutex_lock(&(nat->lock));
+
+	struct sr_nat_mapping *mapping = nat->mappings;
+
+	while (mapping) {
+		if (
+		(mapping->type == mapping_cpy->type) &&
+		(mapping->aux_ext == mapping_cpy->aux_ext)
+		) {
+			struct sr_nat_connection *conn = mapping->conns;
+			while (conn) {
+				if (
+				(conn->ip_dest == ip_dest) &&
+				(conn->port_dest == port_dest)
+				) {
+					conn->unsolicited_packet = packet;
+					conn->len = len;
+					conn->interface = interface;
+					break;
+				}
+				conn = conn->next;
+			}
+			break;
 		}
 		mapping = mapping->next;
 	}

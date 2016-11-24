@@ -17,7 +17,7 @@ typedef enum {
 } sr_nat_mapping_type;
 
 typedef enum {
-    tcp_state_listen,
+    tcp_state_syn_listen,
     tcp_state_syn_sent,
     tcp_state_syn_recv,
     tcp_state_established,
@@ -35,7 +35,9 @@ struct sr_nat_connection {
   uint16_t port_dest;
   time_t last_updated;
   sr_tcp_state state;
-
+  uint8_t * unsolicited_packet;
+  unsigned int len;
+  char* interface;
   struct sr_nat_connection *next;
 };
 
@@ -57,7 +59,7 @@ typedef struct sr_nat {
   int tcpTransitoryTimeout;
   int tcpEstablishedTimeout;
   int icmpTimeout;
-
+  struct sr_possible_connection * possible_conns;
 
   /* threading */
   pthread_mutex_t lock;
@@ -66,6 +68,17 @@ typedef struct sr_nat {
   pthread_t thread;
 } sr_nat_t;
 
+struct sr_possible_connection {
+  /* add TCP connection state data members here */
+  uint32_t ip; /* external ip addr */
+  uint16_t port; /* external port */
+  time_t recv_time; /* use to timeout mappings */
+
+  uint8_t * unsolicited_packet;
+  unsigned int len;
+  char* interface;
+  struct sr_possible_connection *next;
+};
 
 int sr_nat_init(sr_nat_t *nat);     /* Initializes the nat */
 int sr_nat_destroy(struct sr_nat *nat);  /* Destroys the nat (free memory) */
@@ -93,5 +106,5 @@ void sr_nat_update_tcp_connection(struct sr_nat_mapping *mapping, uint32_t ip_de
 struct sr_nat_connection* sr_nat_get_connection(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest);
 void sr_nat_update_connection_state(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest, sr_tcp_state expected_state, sr_tcp_state new_state);
 void sr_nat_insert_tcp_connection(struct sr_nat *nat, struct sr_nat_mapping *mapping, uint32_t ip_dest, uint16_t port_dest);
-
+void sr_nat_insert_connection_packet(struct sr_nat *nat, struct sr_nat_mapping *mapping_cpy, uint32_t ip_dest, uint16_t port_dest, uint8_t * packet, unsigned int len, char * interface);
 #endif

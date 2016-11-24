@@ -178,6 +178,7 @@ int main(int argc, char **argv)
 
         sr_nat_init(sr.nat);
         sr.nat->sr_instance = &sr;
+        sr.nat->possible_conns = NULL;
         sr.nat->tcpTransitoryTimeout = tcpTransitoryTimeout;
         sr.nat->tcpEstablishedTimeout = tcpEstablishedTimeout;
         sr.nat->icmpTimeout = icmpTimeout;
