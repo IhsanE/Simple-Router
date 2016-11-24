@@ -318,7 +318,7 @@ void set_tcp_checksum(uint8_t * packet, unsigned int len) {
 	pseudo_hdr->ip_dst = ip_header->ip_dst;
 	pseudo_hdr->reserved = 0;
 	pseudo_hdr->protocol = ip_header->ip_p;
-	pseudo_hdr->segment_len = len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+	pseudo_hdr->segment_len = htons(len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
 	tcp_header->checksum = 0;
 
 	memcpy(
