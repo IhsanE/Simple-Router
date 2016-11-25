@@ -320,13 +320,13 @@ void set_tcp_checksum(uint8_t * packet, unsigned int len) {
 	tcp_header->checksum = 0;
 
 	memcpy(
-		pseudo_hdr,
 		checksum_struct,
+		pseudo_hdr,
 		sizeof(sr_tcp_pseudo_hdr_t)
 		);
 	memcpy(
-		tcp_header,
 		checksum_struct + sizeof(sr_tcp_pseudo_hdr_t),
+		tcp_header,
 		len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))
 		);
 	tcp_header->checksum = cksum(checksum_struct, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)) + sizeof(sr_tcp_pseudo_hdr_t));
