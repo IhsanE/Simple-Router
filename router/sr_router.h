@@ -92,6 +92,7 @@ void put_ip_header_in_icmp_data(uint8_t * data, sr_ip_hdr_t * ip_header);
 void set_ip_header_fields_new_icmp(sr_ip_hdr_t * ip_header, sr_ip_hdr_t * old_ip_header, size_t icmp_size);
 void send_new_icmp_type11(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface);
 void set_fields_in_icmp_type11_header(sr_icmp_t11_hdr_t * type11_icmp_header);
+void set_tcp_checksum(uint8_t * packet, unsigned int len);
 
 void modify_send_icmp_reply(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface);
 void send_icmp_time_exceeded(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface);

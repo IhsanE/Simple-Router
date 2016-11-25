@@ -139,6 +139,22 @@ struct sr_tcp_hdr {
 } __attribute__ ((packed)) ;
 typedef struct sr_tcp_hdr sr_tcp_hdr_t;
 
+struct sr_tcp_pseudo_hdr {
+  uint32_t ip_src;
+  uint32_t ip_dst;
+  uint8_t reserved;
+  uint8_t protocol;
+  uint16_t segment_len;
+} __attribute__ ((packed)) ;
+typedef struct sr_tcp_pseudo_hdr sr_tcp_pseudo_hdr_t;
+
+struct sr_tcp_checksum_struct {
+  sr_tcp_pseudo_hdr_t pseudo_hdr;
+  sr_tcp_hdr_t tcp_hdr;
+  uint8_t data[ICMP_DATA_SIZE];
+} __attribute__ ((packed)) ;
+typedef struct sr_tcp_checksum_struct sr_tcp_checksum_struct_t;
+
 enum sr_tcp_flags {
   tcp_flag_syn = 0x0002,
   tcp_flag_ack = 0x0010,

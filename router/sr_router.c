@@ -215,9 +215,9 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 	*/							tcp_header->dest_port = external_mapping->aux_int;
 								/*tcp_header->flags = ((20<<12) | (tcp_header->flags)); */
 
-								tcp_header->checksum = 0;
-								tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
 								ip_header->ip_dst = external_mapping->ip_int;
+
+								set_tcp_checksum(packet, len);
 								forwarding_logic(sr, packet, len, interface);
 							}
 							/* if FIN ACK */
@@ -227,9 +227,8 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 							sr_nat_insert_tcp_connection(sr->nat, external_mapping, ip_header->ip_src, tcp_header->src_port);
 							tcp_header->dest_port = external_mapping->aux_int;
 
-							tcp_header->checksum = 0;
-							tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
 							ip_header->ip_dst = external_mapping->ip_int;
+							set_tcp_checksum(packet, len);
 							forwarding_logic(sr, packet, len, interface);
 						}
 
@@ -307,7 +306,32 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 		}
 	}
 }
+void set_tcp_checksum(uint8_t * packet, unsigned int len) {
+	sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+	sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+	sr_tcp_pseudo_hdr_t * pseudo_hdr = (sr_tcp_pseudo_hdr_t *) malloc(sizeof(sr_tcp_pseudo_hdr_t));
+	void * checksum_struct = malloc(len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)) + sizeof(sr_tcp_pseudo_hdr_t));
 
+	pseudo_hdr->ip_src = ip_header->ip_src;
+	pseudo_hdr->ip_dst = ip_header->ip_dst;
+	pseudo_hdr->reserved = 0;
+	pseudo_hdr->protocol = ip_header->ip_p;
+	pseudo_hdr->segment_len = len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+	memcpy(
+		pseudo_hdr,
+		checksum_struct,
+		sizeof(sr_tcp_pseudo_hdr_t)
+		);
+	memcpy(
+		tcp_header,
+		checksum_struct + sizeof(sr_tcp_pseudo_hdr_t),
+		len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t))
+		);
+	tcp_header->checksum = 0;
+	tcp_header->checksum = cksum(checksum_struct, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)) + sizeof(sr_tcp_pseudo_hdr_t));
+	free(checksum_struct);
+}
 void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface, struct sr_rt * routing_entry) {
 	sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
 	sr_tcp_hdr_t * tcp_header = (sr_tcp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
