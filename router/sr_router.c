@@ -318,7 +318,7 @@ void set_tcp_checksum(uint8_t * packet, unsigned int len) {
 	pseudo_hdr->protocol = ip_header->ip_p;
 	pseudo_hdr->segment_len = len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 	tcp_header->checksum = 0;
-	
+
 	memcpy(
 		pseudo_hdr,
 		checksum_struct,
@@ -366,9 +366,8 @@ void handle_tcp_packet_from_int(struct sr_instance* sr, uint8_t * packet, unsign
 	}
 	tcp_header->src_port = htons(internal_mapping->aux_ext);
 	/*tcp_header->flags = ((20<<12) | (tcp_header->flags));*/
-	tcp_header->checksum = 0;
-	tcp_header->checksum = cksum(tcp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
 	ip_header->ip_src = internal_mapping->ip_ext;
+	set_tcp_checksum(packet, len);
 	forwarding_logic(sr, packet, len, interface);
 
 	free(internal_mapping);
