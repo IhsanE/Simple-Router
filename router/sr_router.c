@@ -240,7 +240,7 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 							modify_send_icmp_port_unreachable(sr, packet, len, interface);
 						}
 						else {
-							if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn) {
+							if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn && tcp_header->dest_port >= 1024) {
 								struct sr_possible_connection *new_conn = (struct sr_possible_connection *)malloc(sizeof(struct sr_possible_connection));
 								new_conn->ip = ip_header->ip_src;
 								new_conn->port = tcp_header->dest_port;
@@ -250,7 +250,9 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 								new_conn->interface = interface;
 								new_conn->next = sr->nat->possible_conns;
 								sr->nat->possible_conns = new_conn;
-							} 
+							} else {
+								modify_send_icmp_port_unreachable(sr, packet, len, interface);
+							}
 						}
 						/* else */
 							/* check if SYN flag is set */
