@@ -239,6 +239,9 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 						if (tcp_header->dest_port == htons(22)) {
 							modify_send_icmp_port_unreachable(sr, packet, len, interface);
 						}
+						else {
+							modify_send_icmp_port_unreachable(sr, packet, len, interface);
+						}
 						/* else */
 							/* check if SYN flag is set */
 							/* if SYN */
