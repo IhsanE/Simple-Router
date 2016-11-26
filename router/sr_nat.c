@@ -63,6 +63,9 @@ void *sr_nat_timeout(void *nat_ptr) {  /* Periodic Timout handling */
 		struct sr_nat_mapping *mapping = nat->mappings;
 		struct sr_nat_mapping *to_free = NULL;
 		struct sr_nat_mapping *prev = NULL;
+		struct sr_nat_connection *conn = NULL;
+		struct sr_nat_connection *conn_to_free = NULL;
+		struct sr_nat_connection *prev_conn = NULL;
 
 		while (mapping) {
 			if (mapping->type == nat_mapping_icmp) {
@@ -80,12 +83,11 @@ void *sr_nat_timeout(void *nat_ptr) {  /* Periodic Timout handling */
 					mapping = mapping->next;
 				}
 			} else if (mapping->type == nat_mapping_tcp) {
-/*				conn = mapping->conns;
+				conn = mapping->conns;
 				prev_conn = NULL;
 				while (conn) {
-					if (conn->state == tcp_state_syn_listen) {
-						if (difftime(curtime,conn->last_updated) >= 6) {
-							modify_send_icmp_port_unreachable(nat->sr_instance, conn->unsolicited_packet, conn->len, conn->interface);
+					if (conn->state == tcp_state_established) {
+						if (difftime(curtime, conn->last_updated) >= nat->tcpEstablishedTimeout) {
 							conn_to_free = conn;
 							if (prev_conn) {
 								prev_conn->next = conn->next;
@@ -98,37 +100,56 @@ void *sr_nat_timeout(void *nat_ptr) {  /* Periodic Timout handling */
 							prev_conn = conn;
 							conn = conn->next;
 						}
-						prev_conn = conn;
-						conn = conn->next;
 					} else {
-						prev_conn = conn;
-						conn = conn->next;
+						if (difftime(curtime, conn->last_updated) >= nat->tcpTransitoryTimeout) {
+							conn_to_free = conn;
+							if (prev_conn) {
+								prev_conn->next = conn->next;
+							} else {
+								mapping->conns = conn->next;
+							}
+							conn = conn->next;
+							free(conn_to_free);
+						} else {
+							prev_conn = conn;
+							conn = conn->next;
+						}
 					}
-				}*/
-				mapping = mapping->next;
-			} else {
-				mapping = mapping->next;
+				}
+				if (!(mapping->conns)) {
+					to_free = mapping;
+					if (prev) {
+						prev->next = mapping->next;
+					} else {
+						nat->mappings = mapping->next;
+					}
+					mapping = mapping->next;
+					free(to_free);
+				} else {
+					prev = mapping;
+					mapping = mapping->next;
+				}
 			}
 		}
 
-		struct sr_possible_connection *conn = nat->possible_conns;
-		struct sr_possible_connection *conn_to_free = NULL;
-		struct sr_possible_connection *prev_conn = NULL;
+		struct sr_possible_connection *p_conn = nat->possible_conns;
+		struct sr_possible_connection *p_conn_to_free = NULL;
+		struct sr_possible_connection *prev_p_conn = NULL;
 
-		while (conn) {
-			if (difftime(curtime,conn->recv_time) >= 6) {
-				modify_send_icmp_port_unreachable(nat->sr_instance, conn->unsolicited_packet, conn->len, conn->interface);
-				conn_to_free = conn;
-				if (prev_conn) {
-					prev_conn->next = conn->next;
+		while (p_conn) {
+			if (difftime(curtime,p_conn->recv_time) >= 6) {
+				modify_send_icmp_port_unreachable(nat->sr_instance, p_conn->unsolicited_packet, p_conn->len, p_conn->interface);
+				p_conn_to_free = p_conn;
+				if (prev_p_conn) {
+					prev_p_conn->next = p_conn->next;
 				} else {
-					nat->possible_conns = conn->next;
+					nat->possible_conns = p_conn->next;
 				}
-				conn = conn->next;
-				free(conn_to_free);
+				p_conn = p_conn->next;
+				free(p_conn_to_free);
 			} else {
-				prev_conn = conn;
-				conn = conn->next;
+				prev_p_conn = p_conn;
+				p_conn = p_conn->next;
 			}
 		}	
 

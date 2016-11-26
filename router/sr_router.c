@@ -246,6 +246,15 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 						if (tcp_header->dest_port == htons(22)) {
 							modify_send_icmp_port_unreachable(sr, packet, len, interface);
 						}
+						/* else */
+							/* check if SYN flag is set */
+							/* if SYN */
+								/* wait 6 seconds */
+								/* if client sends SYN for this connection, then drop this packet */
+								/* else */
+									/* send port unreachable for original packet */
+							/* else */
+								/* drop packet*/
 						else {
 							if ((ntohs(tcp_header->flags) & tcp_flag_syn) == tcp_flag_syn && tcp_header->dest_port >= 1024) {
 								struct sr_possible_connection *new_conn = (struct sr_possible_connection *)malloc(sizeof(struct sr_possible_connection));
@@ -261,15 +270,6 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 								modify_send_icmp_port_unreachable(sr, packet, len, interface);
 							}
 						}
-						/* else */
-							/* check if SYN flag is set */
-							/* if SYN */
-								/* wait 6 seconds */
-								/* if client sends SYN for this connection, then drop this packet */
-								/* else */
-									/* send port unreachable for original packet */
-							/* else */
-								/* drop packet*/
 					}
 				}
 			}
@@ -462,20 +462,19 @@ int arp_cache_check_add_queue_remove (struct sr_arpcache *cache, unsigned char *
 
 struct sr_rt * longest_prefix_match(struct sr_instance* sr, uint8_t * packet) {
 	sr_ip_hdr_t * ip_header = (sr_ip_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
-	uint32_t dest_ip = ip_header->ip_dst;
-	struct sr_rt *rt = sr->routing_table;
+	struct sr_rt *routing_table = sr->routing_table;
 
-	struct sr_rt* result = NULL;
+	struct sr_rt* matching = NULL;
 
-    while(rt != NULL) {
-        if((rt->dest.s_addr & rt->mask.s_addr) == (dest_ip & rt->mask.s_addr)){
-            if(result == NULL || rt->mask.s_addr > result->mask.s_addr)
-                result = rt;
+    while(routing_table) {
+        if((routing_table->dest.s_addr & routing_table->mask.s_addr) == (ip_header->ip_dst & routing_table->mask.s_addr)){
+            if(matching == NULL || routing_table->mask.s_addr > matching->mask.s_addr)
+                matching = routing_table;
         }
-        rt = rt->next;
+        routing_table = routing_table->next;
     }
 
-    return result;
+    return matching;
 }
 
 void set_ethernet_src_dst(sr_ethernet_hdr_t * ethernet_header, uint8_t * new_src, uint8_t * new_dst) {
