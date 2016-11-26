@@ -219,6 +219,13 @@ void sr_handle_ip_packet(struct sr_instance* sr,
 
 								set_tcp_checksum(packet, len);
 								forwarding_logic(sr, packet, len, interface);
+							} else {
+								/* forward? */
+								tcp_header->dest_port = external_mapping->aux_int;
+
+								ip_header->ip_dst = external_mapping->ip_int;
+								set_tcp_checksum(packet, len);
+								forwarding_logic(sr, packet, len, interface);
 							}
 							/* if FIN ACK */
 							free(connection);
